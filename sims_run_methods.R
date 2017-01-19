@@ -1,0 +1,80 @@
+library(MASS)
+library(Matrix)
+library(lpbrim)
+source("bmd.R")
+source("formatBRIM.R")
+
+# Set desired list of sample sizes to try
+ns <- c(100, 500)
+
+saveDir <- "sims"
+
+# Set rho_knobs
+rho_knobs <- c(0, 1)
+
+# Do we do BRIM?
+doBRIM <- FALSE
+
+
+for (rcount in 1:length(rho_knobs)) {
+  
+  for (ncount in 1:length(ns)) {
+    
+    # make filename
+    fn <- paste0("rcount=", rcount, "_",
+                 "ncount=", ncount)
+    
+    # Loading data
+    load(file.path(saveDir, "datasets", paste0(fn, ".RData")))
+    
+      if (doBRIM) {
+      
+      # Running lpbrim
+      BRIMtime <- proc.time()[3]
+      
+      # Making large correlation matrix
+      n <- nrow(X)
+      p1 <- ncol(X)
+      p2 <- ncol(Y)
+      p <- p1 + p2
+      crossCors <- cor(X, Y)
+      crossTstats <- crossCors * sqrt(n - 2) / sqrt(1 - crossCors^2)
+      crossPvals <- as.vector(pt(crossTstats, n - 2, lower.tail = FALSE))
+      crossPvals_adj <- crossPvals * p1 * p2 / rank(crossPvals)
+      crossSigs <- as.integer(crossPvals_adj <= 0.1)
+      crossSigMat <- matrix(crossSigs, ncol = p2)
+      largeM <- matrix(integer(p^2), ncol = p)
+      largeM[1:p1, (p1 + 1):p] <- crossSigMat
+      largeM[(p1 + 1):p, 1:p1] <- t(crossSigMat)
+      
+      # Making sure no rowSums are zero
+      zeroDegs <- rowSums(largeM) == 0
+      largeM_red <- largeM[!zeroDegs, !zeroDegs]
+      BRIMmod <- findModules(largeM_red, iter = 5, sparse = FALSE)
+      BRIMformat <- formatBRIM(BRIMmod, zeroDegs, ncol(X))
+      BRIMresults1 <- list("communities" = BRIMformat[[1]])
+      BRIMresults2 <- list("communities" = BRIMformat[[2]])
+      BRIMtime <- proc.time()[3] - BRIMtime
+      
+      save(BRIMtime, BRIMresults1, BRIMresults2,
+           file = file.path(saveDir, "results", 
+                            paste0(fn, "_brim.RData")))
+      
+    }
+  
+    # Running bmd
+    BMDtime <- proc.time()[3]
+    BMDresults <- bmd(X, Y, tag = ncount, 
+                      saveDir = file.path(saveDir, "BMD_saves"), 
+                      updateMethod = 4, initializeMethod = 2,
+                      Dud_tol = 10, OL_tol = 10)
+    BMDtime <- proc.time()[3] - BMDtime
+    save(BMDtime, BMDresults, 
+         file = file.path(saveDir, "results", 
+                          paste0(fn, "_bmd.RData")))
+    
+  }
+  
+}
+
+
