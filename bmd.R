@@ -7,12 +7,12 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     OL_thres = 0.9
     tag = NULL
     saveDir = getwd()
-    updateOutput = TRUE
-    throwInitial = TRUE
     OL_tol = Inf
     Dud_tol = Inf
     updateMethod = 2
     initializeMethod = 2
+    updateOutput = TRUE
+    throwInitial = TRUE
     inv.length = TRUE
     time_limit = 54000
     add_rate = 1
@@ -615,11 +615,12 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       if (length(B_newx) >= 1) {
         B_newy <- update(B_newx, B_oldy)
       } else {
+        B_newy <- integer(0)
         break
       }
       B_new <- c(B_newx, B_newy)
       
-      if (length(B_newy) <= 2)
+      if (length(B_newy) == 0)
         break
       
       if (updateOutput) {
