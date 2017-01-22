@@ -2,15 +2,7 @@ library(MASS)
 library(Matrix)
 library(lpbrim)
 source("sim_postanalysis.R")
-
-# Set desired list of sample sizes to try
-ns <- c(100, 500)
-
-saveDir <- "sims"
-
-rho_knobs <- c(0, 1)
-# Do brim?
-doBRIM <- FALSE
+source("sims_config.R")
 
 for (rcount in 1:length(rho_knobs)){
   for (ncount in 1:length(ns)) {

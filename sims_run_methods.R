@@ -3,18 +3,7 @@ library(Matrix)
 library(lpbrim)
 source("bmd.R")
 source("formatBRIM.R")
-
-# Set desired list of sample sizes to try
-ns <- c(100, 500)
-
-saveDir <- "sims"
-
-# Set rho_knobs
-rho_knobs <- c(0, 1)
-
-# Do we do BRIM?
-doBRIM <- FALSE
-
+source("sims_config.R")
 
 for (rcount in 1:length(rho_knobs)) {
   
