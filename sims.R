@@ -14,21 +14,20 @@ SigmaY <- diag(mY)
 
 for (n in ns) {
 
+  set.seed(1234567)
 
-set.seed(1234567)
+  #Random edge matrix
+  G <- matrix(rbinom(nY * nX, 1, p), nrow = nY, ncol = nX)
+  X <- mvrnorm(n, rep(0, mX), SigmaX)
+  Y <- mvrnorm(n, rep(0, mY), SigmaY)
 
-#Random edge matrix
-G <- matrix(rbinom(nY * nX, 1, p), nrow = nY, ncol = nX)
-X <- mvrnorm(n, rep(0, mX), SigmaX)
-Y <- mvrnorm(n, rep(0, mY), SigmaY)
-Y0 <- Y
+  # Adding signal
+  for (i in 1:nY) {
+    Yindices <- ((i - 1) * bY + 1):(i * bY)
+    Y[ , Yindices] <- beta*as.vector(X %*% rep(G[i,],each=bX)) + Y[ , Yindices]
+  }
 
-# Adding signal
-for (i in 1:nY) {
-  Yindices <- ((i - 1) * bY + 1):(i * bY)
-  Y[ , Yindices] <- beta*as.vector(X %*% rep(G[i,],each=bX)) + Y[ , Yindices]
-}
+  # Saving data
+  save(X, Y, file = dataset_fname(n))
 
-# Saving data
-save(X, Y, file = dataset_fname(n))
 }
