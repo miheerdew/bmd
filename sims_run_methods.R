@@ -5,9 +5,8 @@ source("bmd.R")
 source("formatBRIM.R")
 source("sims_config.R")
 
-  for (ncount in 1:length(ns)) {
+  for (n in ns) {
     
-    n <- ns[ncount]
     # Loading data
     load(dataset_fname(n))
 

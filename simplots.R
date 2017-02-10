@@ -4,8 +4,7 @@ library(lpbrim)
 source("sim_postanalysis.R")
 source("sims_config.R")
 
-  for (ncount in 1:length(ns)) {
-    n <- ns[ncount]
+  for (n in ns) {
 
     # Loading data and results
     load(dataset_fname(n))

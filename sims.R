@@ -12,9 +12,8 @@ mY <- nY * bY
 SigmaX <- as.matrix(bdiag(rho_blocksX))
 SigmaY <- diag(mY)
 
-for (ncount in 1:length(ns)) {
+for (n in ns) {
 
-n <- ns[ncount]
 
 set.seed(1234567)
 
@@ -32,5 +31,4 @@ for (i in 1:nY) {
 
 # Saving data
 save(X, Y, file = dataset_fname(n))
-
-
+}
