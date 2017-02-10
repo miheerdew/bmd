@@ -32,16 +32,9 @@ for (rcount in 1:length(rho_knobs)) {
       Yindices <- ((i - 1) * bY + 1):(i * bY)
       Y[ , Yindices] <- beta*as.vector(X %*% rep(G[i,],each=bX)) + Y[ , Yindices]
     }
-    
-    # make filename
-    fn <- paste0("rcount=", rcount, "_",
-                 "ncount=", ncount,
-                 ".RData")
-    
+
     # Saving data
-    save(X, Y, file = file.path(saveDir, "datasets", fn))
-    
-  }
+    save(X, Y, file = dataset_fname(n))
 
 }
 

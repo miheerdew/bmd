@@ -9,13 +9,10 @@ for (rcount in 1:length(rho_knobs)) {
   
   for (ncount in 1:length(ns)) {
     
-    # make filename
-    fn <- paste0("rcount=", rcount, "_",
-                 "ncount=", ncount)
-    
+    n <- ns[ncount]
     # Loading data
-    load(file.path(saveDir, "datasets", paste0(fn, ".RData")))
-    
+    load(dataset_fname(n))
+
       if (doBRIM) {
       
       # Running lpbrim
@@ -46,24 +43,19 @@ for (rcount in 1:length(rho_knobs)) {
       BRIMtime <- proc.time()[3] - BRIMtime
       
       save(BRIMtime, BRIMresults1, BRIMresults2,
-           file = file.path(saveDir, "results", 
-                            paste0(fn, "_brim.RData")))
+           file = results_fname(n, method="brim"))
       
     }
   
     # Running bmd
     BMDtime <- proc.time()[3]
-    BMDresults <- bmd(X, Y, tag = ncount, 
+    BMDresults <- bmd(X, Y, tag = n, 
                       saveDir = file.path(saveDir, "BMD_saves"), 
                       updateMethod = 4, initializeMethod = 2,
                       Dud_tol = 10, OL_tol = 10)
     BMDtime <- proc.time()[3] - BMDtime
     save(BMDtime, BMDresults, 
-         file = file.path(saveDir, "results", 
-                          paste0(fn, "_bmd.RData")))
-    
-  }
-  
+         file = results_fname(n, method="bmd"))
 }
 
 
