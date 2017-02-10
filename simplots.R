@@ -4,7 +4,6 @@ library(lpbrim)
 source("sim_postanalysis.R")
 source("sims_config.R")
 
-for (rcount in 1:length(rho_knobs)){
   for (ncount in 1:length(ns)) {
     n <- ns[ncount]
 
@@ -28,5 +27,4 @@ for (rcount in 1:length(rho_knobs)){
                      run_dir = plots_dir(n, method="BRIM2"), BMD = FALSE)
     }
   }
-}
 

@@ -6,8 +6,7 @@ bY <- 5
 nX <- 20
 nY <- 20
 
-base_rho <- rep(0.9, nX) #The intra block correlations in X.
-rho_knobs <- c(0,1) #Multiplier to base_rho for the intra-block correlations
+rhos <- rep(0.9, nX) #The intra block correlations in X.
 
 beta <- 1 #In each Y block, Y = beta * (average value of X's in block) + noise
 
