@@ -1,17 +1,22 @@
+#Number of background blocks
+nBg <- 200
+
+#Number of Bimodules
+nBM <- 4
+
+#Number of blocks per Bimodule
+nB <- 50
+
 #Block sizes
-bX <- 5
-bY <- 5
+sB <- 5
 
-#Number of blocks
-nX <- 20
-nY <- 20
 
-rhos <- rep(0.9, nX) #The intra block correlations in X.
+rhos <- c(rep(0.5, nB*nBM), rep(0, nBg)) #The intra-block correlation.
 
-beta <- 1 #In each Y block, Y = beta * (average value of X's in block) + noise
+beta <- 1
 
 lambda <- 3
-p <- min(lambda/nX,1) #The probability of an edge
+p <- min(lambda/nB,1) #The probability of an edge
 
 
 ns <- c(100,500) #The sample sizes to run.
