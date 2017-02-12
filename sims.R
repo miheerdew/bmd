@@ -8,8 +8,8 @@ for (rcount in 1:length(rho_knobs)) {
   # Set intra-correlations of X's
   rhos <- base_rho * rho_knobs[rcount]
   rho_blocksX <- lapply(rhos, function (R) matrix(R, bX, bX) + diag(rep(1 - R, bX)))
-  mX <- length(rhos) * bX
-  mY <- length(rhos) * bY
+  mX <- nX * bX
+  mY <- nY * bY
   
   #------Generating Block Covariance Matrices-----#
   SigmaX <- as.matrix(bdiag(rho_blocksX))
@@ -21,15 +21,16 @@ for (rcount in 1:length(rho_knobs)) {
     
     set.seed(1234567)
   
+    #Random edge matrix
+    G <- matrix(rbinom(nY * nX, 1, p), nrow = nY, ncol = nX)
     X <- mvrnorm(n, rep(0, mX), SigmaX)
     Y <- mvrnorm(n, rep(0, mY), SigmaY)
     Y0 <- Y
     
     # Adding signal
-    for (i in 1:length(rhos)) {
-      Xindices <- ((i - 1) * bX + 1):(i * bX)
+    for (i in 1:nY) {
       Yindices <- ((i - 1) * bY + 1):(i * bY)
-      Y[ , Yindices] <- as.vector(X[ , Xindices] %*% rep(beta / bX, bX)) + Y[ , Yindices]
+      Y[ , Yindices] <- beta*as.vector(X %*% rep(G[i,],each=bX)) + Y[ , Yindices]
     }
     
     # make filename
