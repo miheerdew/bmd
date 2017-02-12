@@ -1,11 +1,27 @@
-bX <- 50 #Size of each X block
-bY <- 25 #Size of each Y block
+#Block sizes
+bX <- 5
+bY <- 5
 
-base_rho <- seq(0.9,0,-0.1) #The intra block correlations in X.
-rho_knobs <- c(0,1) #Multiplier to base_rho for the intra-block correlations
+#Number of blocks
+nX <- 20
+nY <- 20
+
+rhos <- rep(0.9, nX) #The intra block correlations in X.
 
 beta <- 1 #In each Y block, Y = beta * (average value of X's in block) + noise
 
+lambda <- 3
+p <- min(lambda/nX,1) #The probability of an edge
+
+
 ns <- c(100,500) #The sample sizes to run.
-saveDir <- "sims"
 doBRIM <- FALSE #Should we test BRIM?
+
+saveDir <- "sims"
+dataset_fname <- function(n) { file.path(saveDir, "datasets", sprintf("n=%d.RData", n)) }
+results_fname <- function(n, method) { file.path(saveDir, "results", sprintf("n=%d_%s.RData", n, method)) }
+plots_dir <- function(n, method){
+  dirname <- file.path(saveDir, "plots", paste0("n=", n), method)
+  if (!dir.exists(dirname)) dir.create(dirname, recursive = TRUE)
+  return(dirname)
+}
