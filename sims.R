@@ -33,6 +33,9 @@ for (n in ns) {
     }
   }
 
+  if (!dir.exists(file.path(saveDir, "datasets")))
+    dir.create(file.path(saveDir, "datasets"), recursive = TRUE)
+  
   # Saving data
   save(X, Y, file = dataset_fname(n))
 

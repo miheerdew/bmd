@@ -46,11 +46,17 @@ for (n in ns) {
 
   # Running bmd
   BMDtime <- proc.time()[3]
+  suppressWarnings(
   BMDresults <- bmd(X, Y, tag = n,
                     saveDir = file.path(saveDir, "BMD_saves"),
                     updateMethod = 4, initializeMethod = 2,
                     Dud_tol = 10, OL_tol = 10)
+  )
   BMDtime <- proc.time()[3] - BMDtime
+  
+  if (!dir.exists(file.path(saveDir, "results")))
+    dir.create(file.path(saveDir, "results"), recursive = TRUE)
+  
   save(BMDtime, BMDresults,
        file = results_fname(n, method="bmd"))
 }
