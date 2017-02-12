@@ -68,7 +68,7 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
   cat("calculating t-stats and p-values...\n")
   tstats <- unlist(lapply(comm_dfs, function (df) df$corrs * sqrt(n - 2) / sqrt(1 - df$corrs^2)))
   log10pvals <- -log10(pt(tstats, n - 2, lower.tail = FALSE))
-  sizes <- unlist(sapply(commsizes, function (m) rep(m, m)))
+  sizes <- unlist(lapply(commsizes, function (m) rep(m, m)))
   
   #-------------------------------------------------------------
   # PLOT: Community size vs -log10 pvalue distribution
