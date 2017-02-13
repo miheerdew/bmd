@@ -1,10 +1,10 @@
 nX <- 1
 bX <- 20
-rhos <- 0.5
+rhos <- 0.4
 Beta <- 1
 s2 <- 1
-nsims <- 100
-ndata <- 10000
+nsims <- 1000
+ndata <- 100000
 
 library(MASS)
 library(Matrix)
@@ -25,10 +25,10 @@ mu1112 <- function (r) {3 * r}
 mu1123 <- function (r) {2 * r^2 + r}
 mu1122 <- function (r) {1 + 2 * r^2}
 mu1234 <- function (r) {3 * r * (r - 1)^2 * (2 * r^2 + r) / d(r)}
-ryy12  <- function (r) {(bX - 2)^2 * mu1234(r) + 4 * (bX - 2) * mu1123(r) +
-    2 * (mu1122(r) + mu1112(r)) + s2 * r}
-ryy11 <- function (r) {(bX - 2)^2 * mu1123(r) + 4 * (bX - 2) * mu1112(r) +
-    4 * mu1111(r) + s2}
+ryy12  <- function (r) {(bX - 2) * mu1123(r) + (bX - 2) * (bX - 3) * mu1234(r) +
+    4 * (bX - 2) * mu1123(r) + 2 * (mu1112(r) + mu1122(r)) + s2 * r}
+ryy11 <- function (r) {(bX - 1) * mu1122(r) + (bX - 1) * (bX - 2) * mu1123(r) +
+    2 * (bX - 1) * mu1112(r) + mu1111(r) + s2}
 
 moments <- matrix(0, nsims, 5)
 names(moments) <- c("mu1111", "mu1112", "mu1123", "mu1122", "mu1234")
@@ -63,23 +63,29 @@ if (!dir.exists('moment_plots'))
 png(file.path('moment_plots', 'moment_plot1.png'))
 par(mfrow = c(2, 3))
 
-hist(moments$mu1111)
-abline(v = mu1111(rhos), col = 'red')
+hist(moments$mu1111, main = '')
+abline(v = mu1111(rhos), col = 'red', lwd = 2)
+abline(v = mean(moments$mu1111), col = 'green', lty = 2, lwd = 2)
 
-hist(moments$mu1112)
-abline(v = mu1112(rhos), col = 'red')
+hist(moments$mu1112, main = '')
+abline(v = mu1112(rhos), col = 'red', lwd = 2)
+abline(v = mean(moments$mu1112), col = 'green', lty = 2, lwd = 2)
 
-hist(moments$mu1122)
-abline(v = mu1122(rhos), col = 'red')
+hist(moments$mu1122, main = '')
+abline(v = mu1122(rhos), col = 'red', lwd = 2)
+abline(v = mean(moments$mu1122), col = 'green', lty = 2, lwd = 2)
 
-hist(moments$mu1123)
-abline(v = mu1123(rhos), col = 'red')
+hist(moments$mu1123, main = '')
+abline(v = mu1123(rhos), col = 'red', lwd = 2)
+abline(v = mean(moments$mu1123), col = 'green', lty = 2, lwd = 2)
 
-hist(moments$mu1234)
-abline(v = mu1234(rhos), col = 'red')
+hist(moments$mu1234, main = '')
+abline(v = mu1234(rhos), col = 'red', lwd = 2)
+abline(v = mean(moments$mu1234), col = 'green', lty = 2, lwd = 2)
 
-hist(varYs)
-abline(v = varY(rhos), col = 'red')
+hist(varYs, main = '')
+abline(v = varY(rhos), col = 'red', lwd = 2)
+abline(v = mean(varYs), col = 'green', lty = 2, lwd = 2)
 
 dev.off()
 
@@ -87,11 +93,11 @@ png(file.path('moment_plots', 'moment_plot2.png'))
 par(mfrow = c(1, 2))
 
 hist(crosscors$ryy12)
-abline(v = ryy12(rhos), col = 'red')
-abline(v = mean(crosscors$ryy12), col = 'green')
+abline(v = ryy12(rhos), col = 'red', lwd = 2)
+abline(v = mean(crosscors$ryy12), col = 'green', lty = 2, lwd = 2)
 
 hist(crosscors$ryy11)
-abline(v = ryy11(rhos), col = 'red')
-abline(v = mean(crosscors$ryy11), col = 'green')
+abline(v = ryy11(rhos), col = 'red', lwd = 2)
+abline(v = mean(crosscors$ryy11), col = 'green', lty = 2, lwd = 2)
 
 dev.off()
