@@ -3,6 +3,8 @@ bX <- 20
 rhos <- 0.5
 Beta <- 1
 s2 <- 1
+nsims <- 100
+ndata <- 10000
 
 library(MASS)
 library(Matrix)
@@ -17,39 +19,79 @@ SigmaX <- as.matrix(bdiag(rho_blocksX))
 
 # Useful functions
 d <- function (r) {1 - 3 * r^2 + 2 * r^3}
-varY <- function (r) {bX * Beta * (1 - rho + rho * bX) + s2}
+varY <- function (r) {bX * Beta * (1 - r + r * bX) + s2}
 mu1111 <- function (r) {3}
-mu1112 <- function (r) {3 * rho}
-mu1123 <- function (r) {2 * rho^2 + rho}
-mu1122 <- function (r) {1 + 2 * rho^2}
-mu1234 <- function (r) {3 * rho * (rho - 1)^2 * (2 * rho^2 + rho) / d(p)}
+mu1112 <- function (r) {3 * r}
+mu1123 <- function (r) {2 * r^2 + r}
+mu1122 <- function (r) {1 + 2 * r^2}
+mu1234 <- function (r) {3 * r * (r - 1)^2 * (2 * r^2 + r) / d(r)}
+ryy12  <- function (r) {(bX - 2)^2 * mu1234(r) + 4 * (bX - 2) * mu1123(r) +
+    2 * (mu1122(r) + mu1112(r)) + s2 * r}
+ryy11 <- function (r) {(bX - 2)^2 * mu1123(r) + 4 * (bX - 2) * mu1112(r) +
+    4 * mu1111(r) + s2}
 
-S4 <- diag(4)
-S4[col(S4) != row(S4)] <- rho
-S3 <- S4[1:3, 1:3]
-S3[col(S3) != row(S3)] <- rho
-one3 <- rep(1, 3)
-t(one3) %*% solve(S3) %*% one3
-3 * (rho - 1)^2 / d(rho)
+moments <- matrix(0, nsims, 5)
+names(moments) <- c("mu1111", "mu1112", "mu1123", "mu1122", "mu1234")
+moments <- as.data.frame(moments)
+varYs <- rep(0, nsims)
 
-e <- function (r) { 1 - 3 * r^2 * (r - 1)^2 / d(r) }
+crosscors <- matrix(0, nsims, 2)
+names(crosscors) <- c("ryy12", "ryy11")
+crosscors <- as.data.frame(crosscors)
 
-rhos <- seq(0.01, 0.99, b = 0.01)
-plot(rhos, sapply(rhos, e))
+for (sim in 1:nsims) {
+  
+  cat("sim", sim, "\n")
+  
+  Data <- mvrnorm(ndata, rep(0, bX), SigmaX)
+  Y <- Data %*% rep(1, bX) + rnorm(ndata, sd = sqrt(s2))
+  moments[sim, 'mu1111'] <- mean(Data[ , 1]^4)
+  moments[sim, 'mu1112'] <- mean(Data[ , 1]^3 * Data[ , 2])
+  moments[sim, 'mu1123'] <- mean(Data[ , 1]^2 * Data[ , 2] * Data[ , 3])
+  moments[sim, 'mu1122'] <- mean(Data[ , 1]^2 * Data[ , 2]^2)
+  moments[sim, 'mu1234'] <- mean(Data[ , 1] * Data[ , 2] * Data[ , 3] * Data[ , 4])
+  varYs[sim] <- var(Y)
+  
+  crosscors[sim, 'ryy12'] <- mean(Y^2 * Data[ , 1] * Data[ , 2])
+  crosscors[sim, 'ryy11'] <- mean(Y^2 * Data[ , 1]^2)
+  
+}
 
+if (!dir.exists('moment_plots'))
+  dir.create('moment_plots')
 
-library(MASS)
-S2 <- S3[1:2, 1:2]
-Data2 <- mvrnorm(10000, rep(0, 2), S2)
-mean(Data2[ , 1]^2 * Data2[ , 2]^2)
-1 + 2 * rho^2
+png(file.path('moment_plots', 'moment_plot1.png'))
+par(mfrow = c(2, 3))
 
+hist(moments$mu1111)
+abline(v = mu1111(rhos), col = 'red')
 
-Data3 <- mvrnorm(10000, rep(0, 3), S3)
-mean(Data3[ , 1]^2 * Data3[ , 2] * Data3[ , 3])
+hist(moments$mu1112)
+abline(v = mu1112(rhos), col = 'red')
 
-2 * rho^2 + rho
+hist(moments$mu1122)
+abline(v = mu1122(rhos), col = 'red')
 
-Data4 <- mvrnorm(10000, rep(0, 4), S4)
-mean(apply(Data4, 1, prod))
-3* rho * (rho - 1)^2 * (2 * rho^2 + rho) / d(rho)
+hist(moments$mu1123)
+abline(v = mu1123(rhos), col = 'red')
+
+hist(moments$mu1234)
+abline(v = mu1234(rhos), col = 'red')
+
+hist(varYs)
+abline(v = varY(rhos), col = 'red')
+
+dev.off()
+
+png(file.path('moment_plots', 'moment_plot2.png'))
+par(mfrow = c(1, 2))
+
+hist(crosscors$ryy12)
+abline(v = ryy12(rhos), col = 'red')
+abline(v = mean(crosscors$ryy12), col = 'green')
+
+hist(crosscors$ryy11)
+abline(v = ryy11(rhos), col = 'red')
+abline(v = mean(crosscors$ryy11), col = 'green')
+
+dev.off()
