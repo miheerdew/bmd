@@ -32,10 +32,6 @@ for (n in ns) {
       Y[ ,Yindices] <- (beta/(sB*lambda))*as.vector(X[,Xindices] %*% rep(G[i,j,],each=sB)) + Y[ , Yindices]
     }
   }
-
-  if (!dir.exists(file.path(saveDir, "datasets")))
-    dir.create(file.path(saveDir, "datasets"), recursive = TRUE)
-  
   # Saving data
   save(X, Y, file = dataset_fname(n))
 
