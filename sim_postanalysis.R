@@ -1,7 +1,15 @@
 library(Matrix)
 source("plotLargeMat.R")
 
-sim_postanalysis <- function (results, X, Y, run_name, run_dir, 
+plot_matrix <- function(m, filename, width=600, height=600,
+                        useRaster=FALSE, ... ) {
+  #Plots the square matrix to a png file.
+  png(filename, width=width, height=height, ...)
+  image(m[,ncol(m):1], useRaster=useRaster)
+  dev.off()
+}
+
+sim_postanalysis <- function (results, X, Y, run_name, run_dir,
                               X_name = "X", Y_name = "Y", BMD = TRUE,
                               GTEx = FALSE, snpsloc = NULL, geneloc = NULL) {
   
