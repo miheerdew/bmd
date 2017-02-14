@@ -11,6 +11,13 @@ for (n in ns) {
   if (doBRIM) load(results_fname(n, method="brim"))
   load(results_fname(n, method="bmd"))
 
+  #Plot the correlation matrix
+  cat("computing correlation matrix")
+  M <- cor(cbind(X,Y))
+  cat("plotting correlation matrix")
+  plot_matrix(M, filename=file.path(plots_dir(n),"corr.png"),
+              width=nrow(M)/2, height=ncol(M)/2, res=400)
+
   fn = sprintf("n=%d", n)
 
   # Plotting for BMD
