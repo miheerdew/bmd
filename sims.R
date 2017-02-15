@@ -18,6 +18,7 @@ for (n in ns) {
 
   #G[i,.,.] is the random edge matrix for the ith Bimodule
   G <- array(rbinom(nBM * nB * nB * sB, 1, p), dim = c(nBM, nB, nB * sB))
+  
   # Making sure that each Y has at least 1 neighbor
   correctY <- function (c) {
     retVec <- c
@@ -30,16 +31,12 @@ for (n in ns) {
   }
   X <- mvrnorm(n, rep(0, m), SigmaX)
   Y <- mvrnorm(n, rep(0, m), SigmaY)
-  
-  component_list0 <- NULL
-  component_list <- NULL
 
   # Adding signal
   for (i in 1:nBM) {
     
     # Finding indices
-    Xindices <- 1:(sB * nB) + (i - 1) * nB * sB
-    Yindices <- 1:sB + sB * ((j - 1) + (i - 1) * nB)
+    Xindices <- Yindices <- 1:(sB * nB) + (i - 1) * nB * sB
     
     # Collapsing the block effects
     effectsM <- diag(nB)[rep(1:nB, each = sB), ]
