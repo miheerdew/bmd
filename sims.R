@@ -31,6 +31,9 @@ for (n in ns) {
   }
   X <- mvrnorm(n, rep(0, m), SigmaX)
   Y <- mvrnorm(n, rep(0, m), SigmaY)
+  
+  component_list <- NULL
+  bimodule_list <- NULL
 
   # Adding signal
   for (i in 1:nBM) {
@@ -43,10 +46,35 @@ for (n in ns) {
     bEffects <- beta * X[ , Xindices] %*% effectsM
     
     # Adding to the noise
-    Y[ , Yindices] <- bEffects %*% G[i, , ]
+    Y[ , Yindices] <- bEffects %*% G[i, , ] + Y[ , Yindices]
+    
+    # Finding connected components
+    dimGiAdj <- nrow(G[i, , ]) + ncol(G[i, , ])
+    GiAdj <- matrix(integer(dimGiAdj^2), ncol = dimGiAdj)
+    crossindx1 <- 1:nrow(G[i, , ])
+    crossindx2 <- (nrow(G[i, , ]) + 1):dimGiAdj
+    GiAdj[crossindx1, crossindx2] <- G[i, , ]
+    GiAdj[crossindx2, crossindx1] <- t(G[i, , ])
+    Gi <- graph.adjacency(GiAdj, mode = "undirected")
+    componentsi <- components(Gi)
+    nci <- max(componentsi$membership)
+    cci <- lapply(1:nci, function (c) which(componentsi$membership == c))
+    
+    # Adjusting indices
+    cci <- lapply(cci, function (cc) {
+      cc[cc > nB] <- m + Yindices[cc[cc > nB] - nB]
+      ccx <- unlist(lapply(cc[cc <= nB], function (x) 1:sB + (x - 1) * sB))
+      ccx <- Xindices[ccx]
+      cc <- c(ccx, cc[cc > nB])
+      return(cc)
+      }
+    )
+    
+    component_list <- c(component_list, cci)
+    bimodule_list <- c(bimodule_list, list(c(Xindices, Yindices + m)))
     
   }
   # Saving data
-  save(X, Y, file = dataset_fname(n))
+  save(X, Y, component_list, bimodule_list, file = dataset_fname(n))
 
 }
