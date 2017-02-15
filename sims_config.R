@@ -15,7 +15,7 @@ rhos <- c(rep(0.5, nB*nBM), rep(0, nBg)) #The intra-block correlation.
 
 beta <- 1
 
-lambda <- 3
+lambda <- 5
 p <- min(lambda/nB,1) #The probability of an edge
 
 

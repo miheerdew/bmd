@@ -17,20 +17,37 @@ for (n in ns) {
   set.seed(1234567)
 
   #G[i,.,.] is the random edge matrix for the ith Bimodule
-  G <- array(rbinom(nBM * nB * nB, 1, p), dim=c(nBM, nB, nB))
+  G <- array(rbinom(nBM * nB * nB * sB, 1, p), dim = c(nBM, nB, nB * sB))
+  # Making sure that each Y has at least 1 neighbor
+  correctY <- function (c) {
+    retVec <- c
+    if (sum(retVec) == 0)
+      retVec[sample(length(retVec), 1)] <- 1
+    return(retVec)
+  }
+  for (i in 1:nBM) {
+    G[i, , ] <- apply(G[i, , ], 2, correctY)
+  }
   X <- mvrnorm(n, rep(0, m), SigmaX)
   Y <- mvrnorm(n, rep(0, m), SigmaY)
+  
+  component_list0 <- NULL
+  component_list <- NULL
 
   # Adding signal
   for (i in 1:nBM) {
-    for (j in 1:nB) {
-      #The indices of the jth Y block in the ith Bimodule
-      Yindices <- 1:sB + sB*((j-1) + (i-1)*nB)
-
-      #The indices corresponding to the ith Bimodule
-      Xindices <- 1:(sB*nB) + (i-1)*nB*sB
-      Y[ ,Yindices] <- (beta/(sB*lambda))*as.vector(X[,Xindices] %*% rep(G[i,j,],each=sB)) + Y[ , Yindices]
-    }
+    
+    # Finding indices
+    Xindices <- 1:(sB * nB) + (i - 1) * nB * sB
+    Yindices <- 1:sB + sB * ((j - 1) + (i - 1) * nB)
+    
+    # Collapsing the block effects
+    effectsM <- diag(nB)[rep(1:nB, each = sB), ]
+    bEffects <- beta * X[ , Xindices] %*% effectsM
+    
+    # Adding to the noise
+    Y[ , Yindices] <- bEffects %*% G[i, , ]
+    
   }
   # Saving data
   save(X, Y, file = dataset_fname(n))
