@@ -1,6 +1,7 @@
 library(MASS)
 library(Matrix)
 library(lpbrim)
+library(igraph)
 source("sims_config.R")
 
 # Set intra-correlations of X's

@@ -1,6 +1,7 @@
 library(MASS)
 library(Matrix)
 library(lpbrim)
+library(igraph)
 source("sim_postanalysis.R")
 source("sims_config.R")
 source("ggcor.R")
