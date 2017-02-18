@@ -25,13 +25,13 @@ mu1112 <- function (r) {3 * r}
 mu1123 <- function (r) {2 * r^2 + r}
 mu1122 <- function (r) {1 + 2 * r^2}
 mu1234 <- function (r) {3 * r * (r - 1)^2 * (2 * r^2 + r) / d(r)}
-ryy12  <- function (r) {(bX - 2) * mu1123(r) + (bX - 2) * (bX - 3) * mu1234(r) +
-    4 * (bX - 2) * mu1123(r) + 2 * (mu1112(r) + mu1122(r)) + s2 * r}
-ryy11 <- function (r) {(bX - 1) * mu1122(r) + (bX - 1) * (bX - 2) * mu1123(r) +
-    2 * (bX - 1) * mu1112(r) + mu1111(r) + s2}
+pyy12  <- function (r) {((bX - 2) * mu1123(r) + (bX - 2) * (bX - 3) * mu1234(r) +
+    4 * (bX - 2) * mu1123(r) + 2 * (mu1112(r) + mu1122(r)) + s2 * r) / varY(r)}
+pyy11 <- function (r) {((bX - 1) * mu1122(r) + (bX - 1) * (bX - 2) * mu1123(r) +
+    2 * (bX - 1) * mu1112(r) + mu1111(r) + s2) / varY(r)}
 all4s <- function (r) {3 * sum(SigmaX)^2}
-ryyyy <- function (r) {all4s(r) + 
-    6 * s2 * Beta^2 * bX * (1 - r + bX * r) + s2^2 * mu1111(r)}
+pyyyy <- function (r) {(all4s(r) + 
+    6 * s2 * Beta^2 * bX * (1 - r + bX * r) + s2^2 * mu1111(r)) / varY(r)^(1.5)}
 
 moments <- matrix(0, nsims, 5)
 names(moments) <- c("mu1111", "mu1112", "mu1123", "mu1122", "mu1234")
@@ -55,9 +55,10 @@ for (sim in 1:nsims) {
   moments[sim, 'mu1234'] <- mean(Data[ , 1] * Data[ , 2] * Data[ , 3] * Data[ , 4])
   varYs[sim] <- var(Y)
   
-  crosscors[sim, 'ryy12'] <- mean(Y^2 * Data[ , 1] * Data[ , 2])
-  crosscors[sim, 'ryy11'] <- mean(Y^2 * Data[ , 1]^2)
-  crosscors[sim, 'ryyyy'] <- mean(Y^4)
+  crosscors[sim, 'ryy12'] <- mean(Y^2 * Data[ , 1] * Data[ , 2]) /
+    (var(Y) * sd(Data[ , 1] * sd(Data[ , 2])))
+  crosscors[sim, 'ryy11'] <- mean(Y^2 * Data[ , 1]^2) / (var(Y) * var(Data[ , 1]))
+  crosscors[sim, 'ryyyy'] <- mean(Y^4) / sd(Y)^4
   crosscors[sim, 'all4s'] <- mean((Data %*% rep(1, bX))^4)
   
 }
@@ -98,15 +99,15 @@ png(file.path('moment_plots', 'moment_plot2.png'))
 par(mfrow = c(2, 3))
 
 hist(crosscors$ryy12)
-abline(v = ryy12(rhos), col = 'red', lwd = 2)
+abline(v = pyy12(rhos), col = 'red', lwd = 2)
 abline(v = mean(crosscors$ryy12), col = 'green', lty = 2, lwd = 2)
 
 hist(crosscors$ryy11)
-abline(v = ryy11(rhos), col = 'red', lwd = 2)
+abline(v = pyy11(rhos), col = 'red', lwd = 2)
 abline(v = mean(crosscors$ryy11), col = 'green', lty = 2, lwd = 2)
 
 hist(crosscors$ryyyy)
-abline(v = ryyyy(rhos), col = 'red', lwd = 2)
+abline(v = pyyyy(rhos), col = 'red', lwd = 2)
 abline(v = mean(crosscors$ryyyy), col = 'green', lty = 2, lwd = 2)
 
 hist(crosscors$all4s)
