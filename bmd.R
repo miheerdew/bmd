@@ -623,11 +623,16 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       if (length(B_newy) == 0)
         break
       
+      consec_jaccard <- round(jaccard(B_new, B_old), 3)
+      
       if (updateOutput) {
         cat(paste0("Update ", itCount, 
                    " is size ", length(B_new), 
-                   " (", length(B_newx), ", ", length(B_newy), ")\n", sep=""))
+                   " (", length(B_newx), ", ", length(B_newy), "), ",
+                   "jaccard to last is ", consec_jaccard, "\n", sep=""))
       }
+      
+      #TODO: store all the "last" jaccards in a vector to be returned
       
       # Checking for cycles (4.4.1 in CCME paper)
       if (jaccard(B_new, B_old) > 0) { # Otherwise loop will end naturally
@@ -647,7 +652,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
           for (j in seq_along(seq_pair_jaccards)) {
             seq_pair_jaccards[j] <- jaccard(chain[[j]], chain[[j + 1]])
           }
-          if (sum(seq_pair_jaccards == 1) > 0) {# then break needed
+          if (sum(seq_pair_jaccards > 0.5) > 0) {# then break needed
             cat(" ---- Break found\n")
             B_new <- NULL
             break
