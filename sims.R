@@ -3,6 +3,7 @@ library(Matrix)
 library(lpbrim)
 library(igraph)
 source("sims_config.R")
+source("mvrnormR.R")
 
 # Set intra-correlations of X's
 
@@ -18,7 +19,8 @@ for (n in ns) {
   set.seed(1234567)
 
   #G[i,.,.] is the random edge matrix for the ith Bimodule
-  G <- array(rbinom(nBM * nB * nB * sB, 1, p), dim = c(nBM, nB, nB * sB))
+  arrayvec <- rbinom(nBM * nB * nB * sB, 1, p)
+  G <- array(arrayvec, dim = c(nBM, nB, nB * sB))
   
   # Making sure that each Y has at least 1 neighbor
   correctY <- function (c) {
@@ -30,8 +32,8 @@ for (n in ns) {
   for (i in 1:nBM) {
     G[i, , ] <- apply(G[i, , ], 2, correctY)
   }
-  X <- mvrnorm(n, rep(0, m), SigmaX)
-  Y <- mvrnorm(n, rep(0, m), SigmaY)
+  X <- mvrnormR(n, rep(0, m), SigmaX)
+  Y <- mvrnormR(n, rep(0, m), SigmaY)
   
   component_list <- NULL
   bimodule_list <- NULL
