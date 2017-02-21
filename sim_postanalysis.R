@@ -10,7 +10,7 @@ plot_matrix <- function(m, filename, width=600, height=600,
 }
 
 sim_postanalysis <- function (results, X, Y, run_name, run_dir,
-                              X_name = "X", Y_name = "Y", BMD = TRUE,
+                              X_name = "X", Y_name = "Y", BMD = TRUE, do_update_info = TRUE,
                               GTEx = FALSE, snpsloc = NULL, geneloc = NULL) {
 
   #-----------------------------------------------------------------------
@@ -32,6 +32,54 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
 
   Xsizes <- integer(ncomms)
   Ysizes <- integer(ncomms)
+  
+  if (do_update_info) {
+    
+    nonNullUpdateIndxs <- which(!unlist(lapply(BMDresults$update_info, 
+                                               is.null)))
+    nonNullIndxs <- BMDresults$nonNullIndxs
+    commIndxs <- BMDresults$finalIndxs
+    
+    # Creating folder for update info plots
+    uiplotdir <- file.path(run_dir, "update_info")
+    if (!dir.exists(uiplotdir))
+      dir.create(uiplotdir)
+    
+    for (ui in nonNullUpdateIndxs) {
+      
+      updateInfoi <- BMDresults$update_info[ui]
+      
+      uilength <- length(updateInfoi[[1]]$consec_jaccards)
+      
+      plottitle <- paste0("ui ", ui, ",")
+      fn <- paste0("ui", ui)
+      if (ui %in% commIndxs) {
+        plottitle <- paste(plottitle, "found community")
+        fn <- paste0(fn, "fc")
+      }
+      if (ui %in% setdiff(nonNullIndxs, commIndxs)) {
+        plottitle <- paste(plottitle, "overlapping community")
+        fn <- paste0(fn, "oc")
+      }
+      if (ui %in% setdiff(nonNullUpdateIndxs, nonNullIndxs)) {
+        plottitle <- paste(plottitle, "broken cycle or null community")
+        fn <- paste0(fn, "bc")
+      }
+      
+      png(file.path(uiplotdir, paste0(fn, ".png")))
+      plot(0, 0, xlim = c(0, uilength + 1), ylim = c(0, 1), col = "white",
+           main = plottitle, xlab = "update no.", ylab = "consec. jaccard")
+      lines(1:uilength, updateInfoi[[1]]$consec_jaccards)
+      points(1:uilength, updateInfoi[[1]]$consec_jaccards,
+             col = as.numeric(updateInfoi[[1]]$found_cycle) + 1,
+             pch = as.numeric(updateInfoi[[1]]$found_break) + 16)
+      legend("topright", legend = c("found cycle", "found break"),
+             col = c(2, 1), lty = c(1, NA), pch = c(NA, 17), lwd = c(4, NA))
+      dev.off()
+      
+    }
+
+  }
 
   for (c in 1:ncomms) {
 
