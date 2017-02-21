@@ -9,6 +9,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     saveDir = getwd()
     OL_tol = Inf
     Dud_tol = Inf
+    time_limit = 18000
     updateMethod = 2
     initializeMethod = 2
     updateOutput = TRUE
@@ -526,6 +527,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   initial.sets <- comms
   final.sets <- comms
   did_it_cycle <- logical(length(comms))
+  update_info <- comms
   nits <- numeric(dy)
   
   # Making save string
@@ -599,6 +601,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     initial.sets[[comm_indx]] <- B_old
     B_new <- c(Xindx, Yindx)
     chain <- list(B_old)
+    consec_jaccards <- NULL
+    found_cycle <- found_break <- NULL
+    mean_jaccards <- NULL ## add all these to update_info
     itCount <- 0
     cycledSets <- NULL
     if (updateOutput) {
@@ -610,6 +615,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     repeat {
       
       itCount <- itCount + 1
+      
+      #if (itCount == 50)
+      #  break
       
       B_newx <- update(B_oldy, B_oldx)
       if (length(B_newx) >= 1) {
@@ -623,60 +631,76 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       if (length(B_newy) == 0)
         break
       
+      consec_jaccard <- jaccard(B_new, B_old)
+      jaccards <- unlist(lapply(chain, function (B) jaccard(B, B_new)))
+      found_cycle <- c(found_cycle, FALSE)
+      found_break <- c(found_break, FALSE)
+      consec_jaccards <- c(consec_jaccards, consec_jaccard)
+      mean_jaccards <- c(mean_jaccards, mean(jaccards))
+      
       if (updateOutput) {
         cat(paste0("Update ", itCount, 
                    " is size ", length(B_new), 
-                   " (", length(B_newx), ", ", length(B_newy), ")\n", sep=""))
+                   " (", length(B_newx), ", ", length(B_newy), "), ",
+                   "jaccard to last is ", round(consec_jaccard, 3), ", ",
+                   "mean jaccard along chain is ", round(mean(jaccards), 3), "\n", sep=""))
       }
+      
+      #TODO: store all the "last" jaccards in a vector to be returned
+      
       
       # Checking for cycles (4.4.1 in CCME paper)
       if (jaccard(B_new, B_old) > 0) { # Otherwise loop will end naturally
         
-        jaccards <- unlist(lapply(chain, function (B) jaccard(B, B_new)))
-        
         if (sum(jaccards == 0) > 0) { # Cycle has been found
+          
+          found_cycle[itCount] <- TRUE
+          did_it_cycle[comm_indx] <- TRUE
           
           if (updateOutput)
             cat("---- Cycle found")
           
-          Start <- which(jaccards == 0)
+          Start <- max(which(jaccards == 0))
           cycle_chain <- chain[Start:length(chain)]
           
           # Checking for cycle break (4.4.1a)
           seq_pair_jaccards <- rep(0, length(cycle_chain) - 1)
           for (j in seq_along(seq_pair_jaccards)) {
-            seq_pair_jaccards[j] <- jaccard(chain[[j]], chain[[j + 1]])
+            seq_pair_jaccards[j] <- jaccard(chain[[Start + j - 1]], chain[[Start + j]])
           }
-          if (sum(seq_pair_jaccards == 1) > 0) {# then break needed
+          if (sum(seq_pair_jaccards > 0.5) > 0) {# then break needed
             cat(" ---- Break found\n")
+            found_break[itCount] <- TRUE
             B_new <- NULL
             break
           }
           
           # Create conglomerate set (and check, 4.4.1b)
           B_J <- unique(unlist(cycle_chain))
-          B_new <- B_J
           B_J_check <- unlist(lapply(chain, function (B) jaccard(B_J, B)))
           if (sum(B_J_check == 0) > 0) {
             cat(" ---- Old cycle\n")
-            did_it_cycle[comm_indx] <- TRUE
             break
           } else {
             cat(" ---- New cycle\n")
+            B_oldx <- B_J[B_J <= dx]
+            B_oldy <- B_J[B_J > dx]
           }
           
-        } # From checking jaccards to cycle_chain
+        } else {
+          # From checking jaccards to cycle_chain; if not, then can set B_oldx
+          # and B_oldy to the update and restart.
+          B_oldx <- B_newx
+          B_oldy <- B_newy
+        }
         
-      } else { # From checking B_new to B_old; if B_new = B_old: 
+      } else { # From checking B_new to B_old; if not, B_new = B_old and:
         break
       }
       
-      
-      B_oldx <- B_newx
-      B_oldy <- B_newy
       B_old <- c(B_oldx, B_oldy)
       chain <- c(chain, list(B_new))
-      
+
     } # From Updates
     
     nits[comm_indx] <- itCount
@@ -686,6 +710,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     
     comms[[comm_indx]] <- B_new
     final.sets[[comm_indx]] <- B_new
+    update_info[[comm_indx]] <- list("mean_jaccards" = mean_jaccards,
+                                     "consec_jaccards" = consec_jaccards,
+                                     "found_cycle" = found_cycle,
+                                     "found_break" = found_break)
     remainingX <- setdiff(remainingX, B_new)
     remainingY <- setdiff(remainingY, B_new)
     
@@ -771,7 +799,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
                      "report" = report,
                      "communities_before_OLfilt" = nonNullComms,
                      "OLfilt" = OLfilt,
-                     "did_it_cycle" = final_did_it_cycle)
+                     "did_it_cycle" = final_did_it_cycle,
+                     "update_info" = update_info,
+                     "finalIndxs" = finalIndxs,
+                     "nonNullIndxs" = nonNullIndxs)
   return(returnList)
 
 }

@@ -12,6 +12,9 @@
 #       * Returns 0 if no communities
 #   - Jaccard distance between backgrounds
 #-------------------------------------------------------------------------------
+symdiff <- function (s1, s2) {
+  return(union(setdiff(s1, s2), setdiff(s2, s1)))
+}
 
 jaccard <- function (s1, s2) {
   return(length(symdiff(s1, s2)) / length(union(s1, s2)))
@@ -19,8 +22,8 @@ jaccard <- function (s1, s2) {
 
 best_match_bimodule <- function (C1, C2) {
   
-  n <- length(C1)
-  m <- length(C2)
+  n <- length(C1[[1]])
+  m <- length(C2[[1]])
   J <- matrix(0, n, m)
   
   # Computing jaccard distance between background declarations
@@ -45,23 +48,23 @@ best_match_bimodule <- function (C1, C2) {
     
     for (i in 1:n) {
       
-      C1i <- unlist(C1[[i]])
+      C1i <- C1[[1]][[i]]
       
-      for (j in 1:n) {
+      for (j in 1:m) {
         
-        C2j <- unlist(C2[[j]])
+        C2j <- C2[[1]][[j]]
         
-        J[i, j] <- jaccard(C1i, C2i)
+        J[i, j] <- jaccard(C1i, C2j)
         
       }
       
     }
     
-    BM <- mean(apply(J, 1, min) + apply(J, 2, min))
+    BM <- (sum(apply(J, 1, min)) + sum(apply(J, 1, max))) / (2 * (n + m))
 
   }
   
-  return(c("BestMatch" = BM, "BackgroundMatch" = BJ))
+  return(c("BestMatch" = 1 - BM, "BackgroundMatch" = 1 - BJ))
   
 }
     
