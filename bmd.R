@@ -616,8 +616,8 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       
       itCount <- itCount + 1
       
-      if (itCount == 50)
-        break
+      #if (itCount == 50)
+      #  break
       
       B_newx <- update(B_oldy, B_oldx)
       if (length(B_newx) >= 1) {

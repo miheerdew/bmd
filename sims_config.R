@@ -19,7 +19,7 @@ lambda <- 5
 p <- min(lambda/nB,1) #The probability of an edge
 
 
-ns <- c(100,500) #The sample sizes to run.
+ns <- seq(1000, 5000, by = 1000) #The sample sizes to run.
 doBRIM <- FALSE #Should we test BRIM?
 
 saveDir <- "sims"

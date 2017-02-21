@@ -50,7 +50,7 @@ for (n in ns) {
   BMDresults <- bmd(X, Y, tag = n,
                     saveDir = file.path(saveDir, "BMD_saves"),
                     updateMethod = 4, initializeMethod = 2,
-                    Dud_tol = 10, OL_tol = 10, time_limit = 300)
+                    Dud_tol = 10, OL_tol = 10, time_limit = 1800)
   )
   BMDtime <- proc.time()[3] - BMDtime
   save(BMDtime, BMDresults,
