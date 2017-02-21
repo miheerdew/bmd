@@ -1,40 +1,41 @@
-varcalc1 <- function (Xmat, Y) {
+varcalc1 <- function (Xmat, Yvec) {
   
   Xmat <- scale(Xmat)
-  Y <- scale(Y)
+  Yvec <- as.vector(scale(Yvec))
   
-  m <- ncol(Xmat)
   n <- nrow(Xmat)
   
-  if (n != length(Y))
-    stop('X and Y variables must be of same dimension\n')
+  if (n != length(Yvec))
+    stop('X and Yvec variables must be of same dimension\n')
   
   # General calcs
-  xyCors <- as.vector(cor(Y, X))
-  xyDoubleCors <- as.vector(cor(Y^2, Xmat^2))
-  xxDoubleCors <- cor(Xmat^2)
-  y4 <- sum(Y^4)
+  xyCors <- as.vector(cor(Yvec, Xmat))
+  xyDoubleCors <- as.vector(crossprod(Yvec^2, Xmat^2))
+  xxDoubleCors <- crossprod(Xmat^2)
+  y4 <- sum(Yvec^4)
   
   # Calc for star 1
-  xy2mat <- Xmat * Y^2
-  star1 <- sum(cov(xy2mat))
+  xyMat <- Xmat * Yvec
+  star1 <- sum(crossprod(xyMat))
   
   # Calc for star 2
   star2 <- y4 * sum(xyCors)^2
   
   # Calc for star 3
-  star3 <- 2 * sum(xyCors) * sum(xyCors + xyDoubleCors)
+  star3 <- 2 * sum(xyCors) * sum(xyCors * xyDoubleCors)
   
   # Calc for star 4
   star4 <- t(xyCors) %*% xxDoubleCors %*% xyCors
   
   # Calc for dagger 1
-  y3x <- as.vector(cor(Y^3, X))
+  y3x <- as.vector(crossprod(Yvec^3, Xmat))
   dagger1 <- sum(xyCors) * sum(y3x)
   
   # Calc for dagger 2
-  yxjjkmat <- cor(Xmat * Y, Xmat^2)
-  dagger2 <- sum(t(xyCors) %*% yxjjkmat)
+  yxjjkmat <- crossprod(Xmat * Yvec, Xmat^2)
+  dagger2 <- sum(yxjjkmat %*% xyCors)
+  
+  return((star1 + 0.25 * (star2 + star3 + star4) - dagger1 - dagger2) / (n - 1))
   
   
 }
