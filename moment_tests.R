@@ -49,16 +49,22 @@ pyjjk <- function (r) {pbr(r) * (2 * r + 1) / sqrt(varY(r))}
 pyjjj <- function (r) {pbr(r) * 3 / sqrt(varY(r))}
 
 # Variance calculations
-popvar1234 <- function (r) {mu1234(r) + 0.25 * r^2 * 
-    (mu1111(r) + 3 * mu1122(r)) - r * 2 * mu1123(r)}
+popvar1234 <- function (r) {mu1234(r) + r^2 * mu1122(r) - r * 2 * mu1123(r)}
 
 popvar1213 <- function (r) {mu1123(r) + 0.25 * r^2 * 
     (mu1111(r) + 3 * mu1122(r)) - r * (mu1112(r) + mu1123(r))}
 
-popvar <- function (r) {(pyyjj(r) + 0.25 * pxy(r)^2 * (pyyyy(r) + 2 * pyyjj(r) +
-    mu1122(r)) - pxy(r) * (pyyyj(r) + pyjjj(r)) + 
-    (bX - 1) * (pyyjk(r) + 0.25 * pxy(r)^2 * (pyyyy(r) + 2 * pyyjj(r) +
-    mu1122(r)) - pxy(r) * (pyyyj(r) + pyjjk(r)))) * bX}
+popvar <- function (r) {
+  (
+      pyyjj(r) + 0.25 * pxy(r)^2 * (pyyyy(r) + 2 * pyyjj(r) +
+      mu1122(r)) - pxy(r) * (pyyyj(r) + pyjjj(r)) + 
+    (
+      pyyjk(r) + 0.25 * pxy(r)^2 * (pyyyy(r) + 2 * pyyjj(r) +
+      mu1122(r)) - pxy(r) * (pyyyj(r) + pyjjk(r))
+    ) * (bX - 1)
+    
+  ) * bX}
+
 
 moments0 <- matrix(0, nsims0, 5)
 moments0 <- as.data.frame(moments0)
@@ -76,7 +82,7 @@ colnames(truerhos0) <- c("cross", "pyyjk", "pyyyy", "pyyjj", "pyyyj", "pyjjk",
 
 crosscovars <- matrix(0, nsims0, 3)
 crosscovars <- as.data.frame(crosscovars)
-colnames(crosscovars) <- c("ysum", "r1213", "r1234")
+colnames(crosscovars) <- c("ysum", "r1213", "r1234", "ry1y2")
 
 for (sim0 in 1:nsims0) {
   
@@ -96,7 +102,7 @@ for (sim0 in 1:nsims0) {
   
   covars <- matrix(0, nsims, 4)
   covars <- as.data.frame(covars)
-  colnames(covars) <- c("ysum", "r12", "r13", "r34")
+  colnames(covars) <- c("ysum", "r12", "r13", "r34", "ry1", "ry2")
   
   for (sim in 1:nsims) {
     
@@ -136,6 +142,8 @@ for (sim0 in 1:nsims0) {
     covars[sim, 'r12'] <- cor(Data[ , 1], Data[ , 2])
     covars[sim, 'r13'] <- cor(Data[ , 1], Data[ , 3])
     covars[sim, 'r34'] <- cor(Data[ , 3], Data[ , 4])
+    covars[sim, 'ry1'] <- cor(Data[ , 1], Y)
+    covars[sim, 'ry2'] <- cor(Data[ , 2], Y)
     
   }
   
@@ -147,6 +155,7 @@ for (sim0 in 1:nsims0) {
   crosscovars[sim0, 'ysum'] <- var(covars$ysum)
   crosscovars[sim0, 'r1213'] <- cov(covars$r12, covars$r13)
   crosscovars[sim0, 'r1234'] <- cov(covars$r12, covars$r34)
+  crosscovars[sim0, 'ry1y2'] <- cov(covars$ry1, covars$ry2)
     
 }
 
