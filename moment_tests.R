@@ -32,13 +32,6 @@ mu1122 <- function (r) {1 + 2 * r^2}
 mu1234 <- function (r) {3 * r * (r - 1)^2 * (2 * r^2 + r) / d(r)}
 
 # Functions for total variance calculation
-pyy12  <- function (r) {((bX - 2) * mu1123(r) + (bX - 2) * (bX - 3) * mu1234(r) +
-    4 * (bX - 2) * mu1123(r) + 2 * (mu1112(r) + mu1122(r)) + s2 * r) / varY(r)}
-pyy11 <- function (r) {((bX - 1) * mu1122(r) + (bX - 1) * (bX - 2) * mu1123(r) +
-    2 * (bX - 1) * mu1112(r) + mu1111(r) + s2) / varY(r)}
-all4s <- function (r) {3 * sum(SigmaX)^2}
-pyyyy <- function (r) {(all4s(r) + 
-    6 * s2 * Beta^2 * bX * (1 - r + bX * r) + s2^2 * mu1111(r)) / varY(r)^(1.5)}
 pyyjk <- function (r) {(2 * pbr(r)^2 * (2 * r + 1) / (r + 1) + 
                           r * Beta * pbr(r) * (bX + s2 / (Beta * pbr(r)) - 
                               2 * (1 - r + bX * r) / (1 + r))) / varY(r)}
@@ -57,7 +50,7 @@ popvar1213 <- function (r) {mu1123(r) + 0.25 * r^2 *
 popvar <- function (r) {
   (
       pyyjj(r) + 0.25 * pxy(r)^2 * (pyyyy(r) + 2 * pyyjj(r) +
-      mu1122(r)) - pxy(r) * (pyyyj(r) + pyjjj(r)) + 
+      mu1111(r)) - pxy(r) * (pyyyj(r) + pyjjj(r)) + 
     (
       pyyjk(r) + 0.25 * pxy(r)^2 * (pyyyy(r) + 2 * pyyjj(r) +
       mu1122(r)) - pxy(r) * (pyyyj(r) + pyjjk(r))
@@ -71,16 +64,12 @@ moments0 <- as.data.frame(moments0)
 colnames(moments0) <- c("mu1111", "mu1112", "mu1123", "mu1122", "mu1234")
 varYs0 <- rep(0, nsims)
 
-crosscors0 <- matrix(0, nsims0, 4)
-crosscors0 <- as.data.frame(crosscors0)
-colnames(crosscors0) <- c("ryy12", "ryy11", "ryyyy", "all4s")
-
 truerhos0 <- matrix(0, nsims0, 7)
 truerhos0 <- as.data.frame(truerhos0)
 colnames(truerhos0) <- c("cross", "pyyjk", "pyyyy", "pyyjj", "pyyyj", "pyjjk",
                          "pyjjj")
 
-crosscovars <- matrix(0, nsims0, 3)
+crosscovars <- matrix(0, nsims0, 4)
 crosscovars <- as.data.frame(crosscovars)
 colnames(crosscovars) <- c("ysum", "r1213", "r1234", "ry1y2")
 
@@ -91,16 +80,12 @@ for (sim0 in 1:nsims0) {
   colnames(moments) <- c("mu1111", "mu1112", "mu1123", "mu1122", "mu1234")
   varYs <- rep(0, nsims)
   
-  crosscors <- matrix(0, nsims, 4)
-  crosscors <- as.data.frame(crosscors)
-  colnames(crosscors) <- c("ryy12", "ryy11", "ryyyy", "all4s")
-  
   truerhos <- matrix(0, nsims, 7)
   truerhos <- as.data.frame(truerhos)
   colnames(truerhos) <- c("cross", "pyyjk", "pyyyy", "pyyjj", "pyyyj", "pyjjk",
                           "pyjjj")
   
-  covars <- matrix(0, nsims, 4)
+  covars <- matrix(0, nsims, 6)
   covars <- as.data.frame(covars)
   colnames(covars) <- c("ysum", "r12", "r13", "r34", "ry1", "ry2")
   
@@ -119,13 +104,6 @@ for (sim0 in 1:nsims0) {
     moments[sim, 'mu1234'] <- mean(Data[ , 1] * Data[ , 2] * 
                                      Data[ , 3] * Data[ , 4])
     varYs[sim] <- var(Y)
-    
-    crosscors[sim, 'ryy12'] <- mean(Y^2 * Data[ , 1] * Data[ , 2]) /
-      (var(Y) * sd(Data[ , 1] * sd(Data[ , 2])))
-    crosscors[sim, 'ryy11'] <- mean(Y^2 * Data[ , 1]^2) / 
-      (var(Y) * var(Data[ , 1]))
-    crosscors[sim, 'ryyyy'] <- mean(Y^4) / sd(Y)^4
-    crosscors[sim, 'all4s'] <- mean((Data %*% rep(1, bX))^4)
     
     sdY <- sd(Y); sdj <- sd(Data[ , 1]); sdk <- sd(Data[ , 2])
     truerhos[sim, 'cross'] <- mean(Y * Data[ , 1])
@@ -148,7 +126,6 @@ for (sim0 in 1:nsims0) {
   }
   
   moments0[sim0, ] <- colMeans(moments)
-  crosscors0[sim0, ] <- colMeans(crosscors)
   truerhos0[sim0, ] <- colMeans(truerhos)
   varYs0[sim0] <- mean(varYs)
   
@@ -162,7 +139,7 @@ for (sim0 in 1:nsims0) {
 if (!dir.exists('moment_plots'))
   dir.create('moment_plots')
 
-png(file.path('moment_plots', 'moment_plot1.png'))
+png(file.path('moment_plots', 'moment_plotX.png'))
 par(mfrow = c(2, 3))
 
 hist(moments0$mu1111, main = '')
@@ -191,28 +168,8 @@ abline(v = mean(varYs0), col = 'green', lty = 2, lwd = 2)
 
 dev.off()
 
-png(file.path('moment_plots', 'moment_plot2.png'))
-par(mfrow = c(2, 3))
 
-hist(crosscors0$ryy12, main = '')
-abline(v = pyy12(rhos), col = 'red', lwd = 2)
-abline(v = mean(crosscors0$ryy12), col = 'green', lty = 2, lwd = 2)
-
-hist(crosscors0$ryy11, main = '')
-abline(v = pyy11(rhos), col = 'red', lwd = 2)
-abline(v = mean(crosscors0$ryy11), col = 'green', lty = 2, lwd = 2)
-
-hist(crosscors0$ryyyy, main = '')
-abline(v = pyyyy(rhos), col = 'red', lwd = 2)
-abline(v = mean(crosscors0$ryyyy), col = 'green', lty = 2, lwd = 2)
-
-hist(crosscors0$all4s, main = '')
-abline(v = all4s(rhos), col = 'red', lwd = 2)
-abline(v = mean(crosscors0$all4s), col = 'green', lty = 2, lwd = 2)
-
-dev.off()
-
-png(file.path('moment_plots', 'moment_plot3.png'))
+png(file.path('moment_plots', 'moment_plotY.png'))
 par(mfrow = c(3, 3))
 
 hist(truerhos0$cross, main = '')
