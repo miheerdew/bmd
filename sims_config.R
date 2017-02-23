@@ -10,12 +10,16 @@ nB <- 10
 #Block sizes
 sB <- 25
 
-
-rhos <- c(rep(0.5, nB*nBM), rep(0, nBg)) #The intra-block correlation.
-
+# Regression coefficient
 beta <- 1
 
-lambda <- nB
+# Base noise scaling
+s2 <- 1
+
+#The intra-block correlation.
+rhos <- c(rep(0.5, nB*nBM), rep(0, nBg)) 
+
+lambda <- nB / 5
 p <- min(lambda/nB,1) #The probability of an edge
 
 
