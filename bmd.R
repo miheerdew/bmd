@@ -591,6 +591,23 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     
   }
   
+  initialize3 <- function(u){
+    if (u <= dx) {
+      cor_to_u <- cor(X_scaled[,u], Y_scaled)
+      fischer_tranformed_cor <- atanh(cor_to_u)*sqrt(n-3)
+      pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
+      successes <- Yindx[bh_reject(pvals, alpha)]
+    } else {
+      if (u > dx) {
+        cor_to_u <- cor(Y_scaled[,u-dx], X_scaled)
+        fischer_tranformed_cor <- atanh(cor_to_u)*sqrt(n-3)
+        pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
+        successes <- Xindx[bh_reject(pvals, alpha)]
+      } 
+    }
+    return(successes)
+  }
+  
   initialize <- function (...) {
     
     if (initializeMethod == 1)
@@ -598,6 +615,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     
     if (initializeMethod == 2)
       return(update2fast(...))
+    
+    if (initializeMethod == 3)
+      return(initialize3(...))
+    
 
   }
   
