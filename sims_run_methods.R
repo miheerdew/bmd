@@ -49,7 +49,7 @@ for (n in ns) {
   suppressWarnings(
   BMDresults <- bmd(X, Y, tag = n,
                     saveDir = file.path(saveDir, "BMD_saves"),
-                    updateMethod = 4, initializeMethod = 2,
+                    updateMethod = 5, initializeMethod = 2,
                     Dud_tol = 10, OL_tol = 10, time_limit = 1800)
   )
   BMDtime <- proc.time()[3] - BMDtime

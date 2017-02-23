@@ -60,7 +60,7 @@ best_match_bimodule <- function (C1, C2) {
       
     }
     
-    BM <- (sum(apply(J, 1, min)) + sum(apply(J, 1, max))) / (2 * (n + m))
+    BM <- (sum(apply(J, 1, min)) + sum(apply(J, 2, min))) / (2 * (n + m))
 
   }
   

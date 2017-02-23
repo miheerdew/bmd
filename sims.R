@@ -4,6 +4,9 @@ library(lpbrim)
 library(igraph)
 source("sims_config.R")
 source("mvrnormR.R")
+source("ggcor.R")
+
+plot_full_mat <- FALSE
 
 # Set intra-correlations of X's
 
@@ -17,12 +20,16 @@ SigmaY <- diag(m)
 for (n in ns) {
 
   set.seed(1234567)
+  
+  cat("Loop for sample size", n, "\n")
 
   #G[i,.,.] is the random edge matrix for the ith Bimodule
+  cat("--making sub-bimodule graphs...\n")
   arrayvec <- rbinom(nBM * nB * nB * sB, 1, p)
   G <- array(arrayvec, dim = c(nBM, nB, nB * sB))
   
   # Making sure that each Y has at least 1 neighbor
+  cat("--neighbor-correcting bimodule graphs...\n")
   correctY <- function (c) {
     retVec <- c
     if (sum(retVec) == 0)
@@ -30,8 +37,14 @@ for (n in ns) {
     return(retVec)
   }
   for (i in 1:nBM) {
-    G[i, , ] <- apply(G[i, , ], 2, correctY)
+    if (dim(G)[2] > 1) {
+      G[i, , ] <- apply(G[i, , ], 2, correctY)
+    } else {
+      G[i, , ] <- apply(G[i, , , drop = FALSE], 2, correctY)
+    }
   }
+  
+  cat("--simulating base X and Y data...\n")
   X <- mvrnormR(n, rep(0, m), SigmaX)
   Y <- mvrnormR(n, rep(0, m), SigmaY)
   
@@ -40,6 +53,8 @@ for (n in ns) {
 
   # Adding signal
   for (i in 1:nBM) {
+    
+    cat("--signal and components for bm", i, "...\n")
     
     # Finding indices
     Xindices <- Yindices <- 1:(sB * nB) + (i - 1) * nB * sB
@@ -52,10 +67,10 @@ for (n in ns) {
     Y[ , Yindices] <- bEffects %*% G[i, , ] + Y[ , Yindices]
     
     # Finding connected components
-    dimGiAdj <- nrow(G[i, , ]) + ncol(G[i, , ])
+    dimGiAdj <- sum(dim(G)[2:3])
     GiAdj <- matrix(integer(dimGiAdj^2), ncol = dimGiAdj)
-    crossindx1 <- 1:nrow(G[i, , ])
-    crossindx2 <- (nrow(G[i, , ]) + 1):dimGiAdj
+    crossindx1 <- 1:dim(G)[2]
+    crossindx2 <- (dim(G)[2] + 1):dimGiAdj
     GiAdj[crossindx1, crossindx2] <- G[i, , ]
     GiAdj[crossindx2, crossindx1] <- t(G[i, , ])
     Gi <- graph.adjacency(GiAdj, mode = "undirected")
@@ -77,7 +92,40 @@ for (n in ns) {
     bimodule_list <- c(bimodule_list, list(c(Xindices, Yindices + m)))
     
   }
+  
+  cat("--saving data...\n")
   # Saving data
   save(X, Y, component_list, bimodule_list, file = dataset_fname(n))
+  
+  # Plotting correlation matrices
+  combineData <- cbind(X, Y)
+  combineCors <- cor(combineData)
+  dX <- ncol(X); dY <- ncol(Y)
+  
+  if (plot_full_mat) {
+    cat("--plotting full matrix...\n")
+    # Order by connected components
+    Xindx <- unlist(lapply(component_list, function (cc) cc[cc <= dX]))
+    Yindx <- unlist(lapply(component_list, function (cc) cc[cc > dX]))
+    Xbg <- setdiff(1:dX, Xindx); Xindx <- c(Xindx, Xbg)
+    Ybg <- setdiff((dX + 1):(dX + dY), Yindx); Yindx <- c(Yindx, Ybg)
+    combineCors <- combineCors[c(Xindx, Yindx), c(Xindx, Yindx)]
+    ggcor(combineCors, file.path(plots_dir(n), "fullCors.png"), fisher = FALSE,
+          title = "Full correlation matrix")
+    cat("--plotting full fisher value matrix...\n")
+    ggcor(combineCors, file.path(plots_dir(n), "fullFish.png"), n = nrow(X),
+          title = "Full fisher transform matrix")
+  }
+  
+  # Plot just connected components
+  for (c in seq_along(component_list)) {
+    cat("...plotting fisher values for component", c, "\n")
+    cc <- component_list[[c]]
+    Xindx <- cc[cc <= dX]
+    Yindx <- cc[cc > dX]
+    cormatc <- cor(combineData[ , c(Xindx, Yindx)])
+    ggcor(cormatc, file.path(plots_dir(n), paste0("component", c, ".png")), 
+          n = nrow(X), title = paste0("Component ", c, " fisher values"))
+  }
 
 }

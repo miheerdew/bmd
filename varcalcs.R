@@ -73,7 +73,7 @@ varcalc1_multi <- function (Ymat, Xmat) {
   # Calc for dagger 2
   dagger2 <- colSums(xRowSum * t(xRowSum2) * Ymat)
   
-  return((star1 + 0.25 * (star2 + star3 + star4) - dagger1 - dagger2) / (n - 1))
+    return((star1 + 0.25 * (star2 + star3 + star4) - dagger1 - dagger2) / (n - 1))
   
   
 }

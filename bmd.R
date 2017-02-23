@@ -80,8 +80,17 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     
   }
   
-  bh_reject <- function (pvals, alpha) {
-    pvals_adj <- length(pvals) * pvals / rank(pvals)
+  bh_reject <- function (pvals, alpha, conserv = TRUE) {
+    
+    m <- length(pvals)
+    
+    if (!conserv) {
+      pvals_adj <- m * pvals / rank(pvals)
+    } else {
+      mults <- cumsum(1 / c(1:m))
+      pvals_adj <- mults * m * pvals / rank(pvals)
+    }
+    
     if (sum(pvals_adj <= alpha) > 0) {
       thres <- max(pvals[pvals_adj <= alpha])
       return(which(pvals <= thres))
@@ -483,6 +492,105 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     
   }
   
+  update5 <- function (B, A = NULL) {
+    
+    if (length(B) == 0)
+      return(integer(0))
+    
+    test_X <- min(B) > dx
+    nFixd <- length(B)
+    
+    if (test_X) {
+      
+      # Getting fixed matrix
+      fixdIndx <- match(B, Yindx)
+      fixdMat <- as.matrix(Y_scaled[ , fixdIndx])
+
+      # Calculating the variances
+      {
+        # General calcs
+        xyCors <- cor(X_scaled, fixdMat)
+        y4 <- colSums(X_scaled^4)
+        xRowSum <- rowSums(fixdMat)
+        xRowSum2 <- tcrossprod(xyCors, fixdMat^2)
+        
+        # Calc for star 1
+        star1 <- crossprod(X_scaled^2, xRowSum^2)
+        
+        # Calc for star 2
+        star2 <- y4 * rowSums(xyCors)^2
+        
+        # Calc for star 3
+        star3 <- 2 * rowSums(xyCors) * colSums(X_scaled^2 * t(xRowSum2))
+        
+        # Calc for star 4
+        star4 <- rowSums(xRowSum2^2)
+        
+        # Calc for dagger 1
+        dagger1 <- rowSums(xyCors) * crossprod(X_scaled^3, xRowSum)
+        
+        # Calc for dagger 2
+        dagger2 <- colSums(xRowSum * t(xRowSum2) * X_scaled)
+      }
+
+      
+    } else {
+      
+      # Getting indices
+      fixdIndx <- match(B, Xindx)
+      fixdMat <- as.matrix(X_scaled[ , fixdIndx])
+      
+      # Calculating the variances
+      {
+        # General calcs
+        xyCors <- cor(Y_scaled, fixdMat)
+        y4 <- colSums(Y_scaled^4)
+        xRowSum <- rowSums(fixdMat)
+        xRowSum2 <- tcrossprod(xyCors, fixdMat^2)
+        
+        # Calc for star 1
+        star1 <- crossprod(Y_scaled^2, xRowSum^2)
+        
+        # Calc for star 2
+        star2 <- y4 * rowSums(xyCors)^2
+        
+        # Calc for star 3
+        star3 <- 2 * rowSums(xyCors) * colSums(Y_scaled^2 * t(xRowSum2))
+        
+        # Calc for star 4
+        star4 <- rowSums(xRowSum2^2)
+        
+        # Calc for dagger 1
+        dagger1 <- rowSums(xyCors) * crossprod(Y_scaled^3, xRowSum)
+        
+        # Calc for dagger 2
+        dagger2 <- colSums(xRowSum * t(xRowSum2) * Y_scaled)
+      }
+      
+    }
+    
+    
+      
+    allvars <- (star1 + 0.25 * (star2 + star3 + star4) - dagger1 - dagger2) / 
+      (n - 1)
+    corsums <- as.vector(rowSums(xyCors))
+    zstats <- sqrt(n) * corsums / sqrt(allvars)
+    pvals <- pnorm(zstats, lower.tail = FALSE)
+    successes <- bh_reject(pvals, alpha)
+    
+    
+    # Return indices
+    
+    if (test_X) {
+      Anew <- Xindx[successes]
+    } else {
+      Anew <- Yindx[successes]
+    }
+    
+    return(Anew)
+    
+  }
+  
   initialize <- function (...) {
     
     if (initializeMethod == 1)
@@ -503,6 +611,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     
     if (updateMethod == 4)
       return(update4(...))
+    
+    if (updateMethod == 5)
+      return(update5(...))
       
   }
   
@@ -706,7 +817,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     nits[comm_indx] <- itCount
     
     if (length(B_newx) * length(B_newy) == 0)
-      B_new = NULL
+      B_new = integer(0)
     
     comms[[comm_indx]] <- B_new
     final.sets[[comm_indx]] <- B_new

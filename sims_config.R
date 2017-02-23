@@ -1,25 +1,25 @@
 #Number of background blocks
-nBg <- 200
+nBg <- 40
 
 #Number of Bimodules
 nBM <- 4
 
 #Number of blocks per Bimodule
-nB <- 50
+nB <- 10
 
 #Block sizes
-sB <- 5
+sB <- 25
 
 
 rhos <- c(rep(0.5, nB*nBM), rep(0, nBg)) #The intra-block correlation.
 
 beta <- 1
 
-lambda <- 5
+lambda <- nB
 p <- min(lambda/nB,1) #The probability of an edge
 
 
-ns <- seq(1000, 5000, by = 1000) #The sample sizes to run.
+ns <- c(100, 500, seq(1000, 5000, by = 1000)) #The sample sizes to run.
 doBRIM <- FALSE #Should we test BRIM?
 
 saveDir <- "sims"
