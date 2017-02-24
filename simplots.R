@@ -10,7 +10,7 @@ source("best_match.R")
 # Setting up score vectors
 BMD_bm <- BMD_bj <- rep(0, length(ns))
 
-for (n in ns) {
+for (n in ns[-1]) {
 
   # Loading data and results
   load(dataset_fname(n))

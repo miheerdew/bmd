@@ -1,3 +1,5 @@
+source("makeVars.R")
+source("stdize.R")
 bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd(),
                  updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
                  updateMethod = 2, initializeMethod = 2, inv.length = TRUE, add_rate = 1, return_zs = TRUE) {
@@ -15,7 +17,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     updateOutput = TRUE
     throwInitial = TRUE
     inv.length = TRUE
-    time_limit = 54000
+    time_limit = Inf
     add_rate = 1
     return_zs = TRUE
   }
@@ -79,6 +81,31 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
                 "kept_comms" = kept_comms))
     
   }
+  
+  bhy <-
+    function(pvals, alpha = 0.05){
+      
+      # Sorted p-vals
+      sp = sort(pvals)
+      
+      # Save original order of p-vals
+      ord = order(pvals)
+      
+      # Find bhy cutoff
+      nums = 1:length(pvals)
+      cms = cumsum(1/nums)
+      
+      # Find which p-vals are less than bh cutoff
+      under = sp < (nums/(length(pvals)*cms)*alpha)
+      
+      # Return indices of significant p-vals
+      if(sum(under) == 0){
+        return(c())
+      }else{
+        cutoff = max(which(under))
+        return(ord[1:cutoff])
+      }
+    }
   
   bh_reject <- function (pvals, alpha, conserv = TRUE) {
     
@@ -492,7 +519,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     
   }
   
-  update5 <- function (B, A = NULL) {
+  update5 <- function (B, A = NULL, bhy = FALSE) {
     
     if (length(B) == 0)
       return(integer(0))
@@ -576,7 +603,61 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     corsums <- as.vector(rowSums(xyCors))
     zstats <- sqrt(n) * corsums / sqrt(allvars)
     pvals <- pnorm(zstats, lower.tail = FALSE)
-    successes <- bh_reject(pvals, alpha)
+    
+    if (bhy) {
+      successes <- bhy(pvals, alpha)
+    } else {
+      successes <- bh_reject(pvals, alpha)
+    }
+    
+    
+    # Return indices
+    
+    if (test_X) {
+      Anew <- Xindx[successes]
+    } else {
+      Anew <- Yindx[successes]
+    }
+    
+    return(Anew)
+    
+  }
+  
+  update6 <- function (B, A = NULL) {
+    
+    if (length(B) == 0)
+      return(integer(0))
+    
+    test_X <- min(B) > dx
+    nFixd <- length(B)
+    
+    if (test_X) {
+      
+      # Getting fixed matrix
+      fixdIndx <- match(B, Yindx)
+      fixdMat <- as.matrix(Y[ , fixdIndx])
+      Uis <- X
+      cormeans <- as.vector(rowMeans(cor(X, fixdMat)))
+      
+    } else {
+      
+      # Getting fixed matrix
+      fixdIndx <- match(B, Xindx)
+      fixdMat <- as.matrix(X[ , fixdIndx])
+      Uis <- Y
+      cormeans <- as.vector(rowMeans(cor(Y, fixdMat)))
+      
+    }
+    
+    Uis <- stdize(t(Uis))
+    M_A <- stdize(t(fixdMat))
+    
+    
+    
+    allvars <- makeVars(Uis, M_A)
+    zstats <- cormeans / sqrt(allvars)
+    pvals <- pnorm(zstats, lower.tail = FALSE)
+    successes <- bhy(pvals, alpha)
     
     
     # Return indices
@@ -635,6 +716,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     
     if (updateMethod == 5)
       return(update5(...))
+    
+    if (updateMethod == 6)
+      return(update6(...))
       
   }
   
@@ -655,7 +739,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   loopCount <- 0
   OL_count <- 0
   Dud_count <- 0
-  comms <- rep(list(NULL), dx + dy)
+  comms <- rep(list(integer(0)), dx + dy)
   initial.sets <- comms
   final.sets <- comms
   did_it_cycle <- logical(length(comms))
@@ -878,9 +962,33 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   #-----------------------------------------------------------------------------
   #  Clean-up and return -------------------------------------------------------
   
+  endtime <- Sys.time()
+  report <- list(loopCount, OL_count, Dud_count, starttime, endtime)
+  names(report) <- c("loopCount", "OL_count", "Dud_count", "starttime", "endtime")
+  
   # Removing blanks and trivial sets
   cat("removing overlap and unpacking comms...\n")
   nonNullIndxs <- which(unlist(lapply(comms, length)) > 0)
+  if (length(nonNullIndxs) == 0) {
+    
+    returnList <- list("communities" = comms,
+                       "background" = list("X_bg" = 1:dx,
+                                           "Y_bg" = (dx + 1):(dx + dy)),
+                       "commzs" = NULL,
+                       "initial.sets" = initial.sets, 
+                       "final.sets" = final.sets,
+                       "nits" = nits,
+                       "report" = report,
+                       "communities_before_OLfilt" = NULL,
+                       "OLfilt" = NULL,
+                       "did_it_cycle" = NULL,
+                       "update_info" = update_info,
+                       "finalIndxs" = NULL,
+                       "nonNullIndxs" = nonNullIndxs)
+    return(returnList)
+    
+    
+  }
   nonNullComms <- comms[nonNullIndxs]
   OLfilt <- filter_overlap(nonNullComms, tau = OL_thres, inv.length = inv.length)
   finalComms <- OLfilt$final_comms
@@ -914,10 +1022,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   }
       
   
-  endtime <- Sys.time()
   
-  report <- list(loopCount, OL_count, Dud_count, starttime, endtime)
-  names(report) <- c("loopCount", "OL_count", "Dud_count", "starttime", "endtime")
   
   returnList <- list("communities" = list("X_sets" = X_sets,
                                           "Y_sets" = Y_sets),

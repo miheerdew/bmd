@@ -35,10 +35,9 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
   
   if (do_update_info) {
     
-    nonNullUpdateIndxs <- which(!unlist(lapply(BMDresults$update_info, 
-                                               is.null)))
-    nonNullIndxs <- BMDresults$nonNullIndxs
-    commIndxs <- BMDresults$finalIndxs
+    nonNullUpdateIndxs <- which(!unlist(lapply(results$update_info, length)) == 0)
+    nonNullIndxs <- results$nonNullIndxs
+    commIndxs <- results$finalIndxs
     
     # Creating folder for update info plots
     uiplotdir <- file.path(run_dir, "update_info")
@@ -47,7 +46,7 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
     
     for (ui in nonNullUpdateIndxs) {
       
-      updateInfoi <- BMDresults$update_info[ui]
+      updateInfoi <- results$update_info[ui]
       
       uilength <- length(updateInfoi[[1]]$consec_jaccards)
       

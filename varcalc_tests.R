@@ -3,8 +3,8 @@ library(microbenchmark)
 source("varcalcs.R")
 source("moment_calcs.R")
 
-m <- 250
-my <- 250
+m <- 20
+my <- 10
 rho <- 0.5
 nsims <- 1000
 ndata <- 1000
