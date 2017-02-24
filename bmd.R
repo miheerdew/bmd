@@ -734,6 +734,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     B_new <- c(Xindx, Yindx)
     chain <- list(B_old)
     consec_jaccards <- NULL
+    consec_sizes <- list()
     found_cycle <- found_break <- NULL
     mean_jaccards <- NULL ## add all these to update_info
     itCount <- 0
@@ -769,6 +770,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       found_break <- c(found_break, FALSE)
       consec_jaccards <- c(consec_jaccards, consec_jaccard)
       mean_jaccards <- c(mean_jaccards, mean(jaccards))
+      consec_sizes <- c(consec_sizes, list(c(length(B_newx), length(B_newy))))
       
       if (updateOutput) {
         cat(paste0("Update ", itCount, 
@@ -844,6 +846,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     final.sets[[comm_indx]] <- B_new
     update_info[[comm_indx]] <- list("mean_jaccards" = mean_jaccards,
                                      "consec_jaccards" = consec_jaccards,
+                                     "consec_sizes"= consec_sizes,
                                      "found_cycle" = found_cycle,
                                      "found_break" = found_break)
     remainingX <- setdiff(remainingX, B_new)
