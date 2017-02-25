@@ -66,6 +66,9 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
       }
       
       png(file.path(uiplotdir, paste0(fn, ".png")))
+      par(mfrow=c(1,2))
+
+      #Plot the consecutive jaccards for the extraction
       plot(0, 0, xlim = c(0, uilength + 1), ylim = c(0, 1), col = "white",
            main = plottitle, xlab = "update no.", ylab = "consec. jaccard")
       lines(1:uilength, updateInfoi[[1]]$consec_jaccards)
@@ -74,8 +77,17 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
              pch = as.numeric(updateInfoi[[1]]$found_break) + 16)
       legend("topright", legend = c("found cycle", "found break"),
              col = c(2, 1), lty = c(1, NA), pch = c(NA, 17), lwd = c(4, NA))
+
+      #Plot the consecutive module sizes for the extraction
+      consec_size_pairs <- updateInfoi[[1]]$consec_sizes
+      y <- total_sizes <- sapply(consec_size_pairs, sum) #total module size
+      plot(0, 0, xlim = c(0, uilength + 1), ylim = range(y) + c(-1,1), col = "white",
+            main = "module sizes", xlab = "update no.", ylab = "Module size")
+      lines(1:uilength, y)
+      points(1:uilength, y,
+             col = as.numeric(updateInfoi[[1]]$found_cycle) + 1,
+             pch = as.numeric(updateInfoi[[1]]$found_break) + 16)
       dev.off()
-      
     }
 
   }
