@@ -1,9 +1,12 @@
+# Set simtype
+simtype <- "manyblocks-sparse"
+
 library(MASS)
 library(Matrix)
 library(lpbrim)
 source("bmd.R")
 source("formatBRIM.R")
-source("sims_config.R")
+source(file.path("config-files", paste0("sims_config-", simtype, ".R")))
 
 for (n in ns) {
 
@@ -55,4 +58,16 @@ for (n in ns) {
   BMDtime <- proc.time()[3] - BMDtime
   save(BMDtime, BMDresults,
        file = results_fname(n, method="bmd"))
+  
+  BMDtime <- proc.time()[3]
+  suppressWarnings(
+  BMDresults <- bmd(X, Y, tag = n,
+                    saveDir = file.path(saveDir, "BMD_saves"),
+                    updateMethod = 6, initializeMethod = 3,
+                    Dud_tol = 10, OL_tol = 10, time_limit = 1800)
+  )
+  BMDtime <- proc.time()[3] - BMDtime
+  save(BMDtime, BMDresults,
+       file = results_fname(n, method="bmd-kb"))
+  
 }

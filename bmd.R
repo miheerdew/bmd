@@ -677,13 +677,13 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       cor_to_u <- cor(X_scaled[,u], Y_scaled)
       fischer_tranformed_cor <- atanh(cor_to_u)*sqrt(n-3)
       pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
-      successes <- Yindx[bh_reject(pvals, alpha)]
+      successes <- Yindx[bhy(pvals, alpha)]
     } else {
       if (u > dx) {
         cor_to_u <- cor(Y_scaled[,u-dx], X_scaled)
         fischer_tranformed_cor <- atanh(cor_to_u)*sqrt(n-3)
         pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
-        successes <- Xindx[bh_reject(pvals, alpha)]
+        successes <- Xindx[bhy(pvals, alpha)]
       } 
     }
     return(successes)

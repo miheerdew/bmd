@@ -32,7 +32,7 @@ eta <- ((1 - p)^nB + lambda) * sB * (1 - rho + rho * sB)
 ns <- c(100, 500, seq(1000, 5000, by = 1000)) #The sample sizes to run.
 doBRIM <- FALSE #Should we test BRIM?
 
-saveDir <- paste0("sims-", simname)
+saveDir <- file.path("sims", simname)
 dataset_fname <- function(n) {
   if (!dir.exists(file.path(saveDir, "datasets")))
     dir.create(file.path(saveDir, "datasets"), recursive = TRUE)

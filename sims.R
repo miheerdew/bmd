@@ -1,12 +1,15 @@
+# Set simtype
+simtype <- "manyblocks-sparse"
+
 library(MASS)
 library(Matrix)
 library(lpbrim)
 library(igraph)
-source("sims_config.R")
+source(file.path("config-files", paste0("sims_config-", simtype, ".R")))
 source("mvrnormR.R")
 source("ggcor.R")
 
-plot_full_mat <- FALSE
+plot_full_mat <- TRUE
 
 # Set intra-correlations of X's
 
@@ -112,9 +115,6 @@ for (n in ns) {
     combineCors <- combineCors[c(Xindx, Yindx), c(Xindx, Yindx)]
     ggcor(combineCors, file.path(plots_dir(n), "fullCors.png"), fisher = FALSE,
           title = "Full correlation matrix")
-    cat("--plotting full fisher value matrix...\n")
-    ggcor(combineCors, file.path(plots_dir(n), "fullFish.png"), n = nrow(X),
-          title = "Full fisher transform matrix")
   }
   
   # Plot just connected components
@@ -125,7 +125,7 @@ for (n in ns) {
     Yindx <- cc[cc > dX]
     cormatc <- cor(combineData[ , c(Xindx, Yindx)])
     ggcor(cormatc, file.path(plots_dir(n), paste0("component", c, ".png")), 
-          n = nrow(X), title = paste0("Component ", c, " fisher values"))
+          n = nrow(X), title = paste0("Component ", c, " correlations"), fisher = FALSE)
   }
 
 }
