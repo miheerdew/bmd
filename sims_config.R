@@ -8,6 +8,8 @@ simname <- "manyblocks-sparse"
 ns <- c(100, 500, seq(1000, 5000, by = 1000)) #The sample sizes to run.
 doBRIM <- FALSE #Should we test BRIM?
 
+plot_full_mat <- FALSE
+
 saveDir <- file.path("sims", simname)
 
 dataset_fname <- function(n) {
