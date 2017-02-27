@@ -1,15 +1,10 @@
-# Set simtype
-simtype <- "manyblocks-sparse-varAdj"
-
 library(MASS)
 library(Matrix)
 library(lpbrim)
 library(igraph)
-source(file.path("config-files", paste0("sims_config-", simtype, ".R")))
+source("sims_config.R")
 source("mvrnormR.R")
 source("ggcor.R")
-
-plot_full_mat <- TRUE
 
 # Set intra-correlations of X's
 
