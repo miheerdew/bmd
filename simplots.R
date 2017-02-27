@@ -1,5 +1,5 @@
 # Set simtype
-simtype <- "manyblocks-sparse"
+simtype <- "manyblocks-sparse-varAdj"
 
 library(MASS)
 library(Matrix)

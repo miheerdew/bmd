@@ -1,5 +1,5 @@
 # Set simtype
-simtype <- "manyblocks-sparse"
+simtype <- "manyblocks-sparse-varAdj"
 
 library(MASS)
 library(Matrix)
@@ -18,7 +18,7 @@ m <- (nB * nBM + nBg)*sB #The total number of X (or Y) vertices
 
 #------Generating Block Covariance Matrices-----#
 SigmaX <- as.matrix(bdiag(rho_blocksX))
-SigmaY <- diag(m)
+SigmaY <- diag(m) * s2
 
 for (n in ns) {
 
@@ -99,7 +99,7 @@ for (n in ns) {
   cat("--saving data...\n")
   # Saving data
   save(X, Y, component_list, bimodule_list, file = dataset_fname(n))
-  
+
   # Plotting correlation matrices
   combineData <- cbind(X, Y)
   combineCors <- cor(combineData)
