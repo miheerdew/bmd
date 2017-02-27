@@ -1,12 +1,9 @@
-# Set simtype
-simtype <- "manyblocks-sparse-varAdj"
-
 library(MASS)
 library(Matrix)
 library(lpbrim)
 source("bmd.R")
 source("formatBRIM.R")
-source(file.path("config-files", paste0("sims_config-", simtype, ".R")))
+source("sims_config.R")
 
 for (n in ns) {
 
