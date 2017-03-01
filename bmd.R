@@ -114,7 +114,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     if (!conserv) {
       pvals_adj <- m * pvals / rank(pvals)
     } else {
-      mults <- cumsum(1 / c(1:m))
+      mults <- sum(1 / c(1:m))
       pvals_adj <- mults * m * pvals / rank(pvals)
     }
     
