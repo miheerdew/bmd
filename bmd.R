@@ -137,7 +137,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   
   Xindx <- 1:dx
   Yindx <- (dx + 1):(dx + dy)
-  
+
   # Defining pval function
   pvalFun <- function (B) {
     
@@ -729,10 +729,13 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   cat("Beginning method.\n\n")
   
   # Getting node orders
-  Yvar <- apply(Y, 2, var)
-  remainingY <- Yindx[order(Yvar, decreasing = TRUE)]
-  Xvar <- apply(X, 2, var)
-  remainingX <- Xindx[order(Xvar, decreasing = TRUE)]
+  Ysum <- Y_scaled %*% rep(1,dy)
+  Xsum <- X_scaled %*% rep(1,dx)
+  cor_X_to_Ysums <- as.vector(t(Ysum) %*% X_scaled)
+  cor_Y_to_Xsums <- as.vector(t(Xsum) %*% Y_scaled)
+  
+  remainingY <- Yindx[order(cor_Y_to_Xsums, decreasing = TRUE)]
+  remainingX <- Xindx[order(cor_X_to_Ysums, decreasing = TRUE)]
 
   # Initializing control variables
   didX <- TRUE
