@@ -723,7 +723,6 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   }
   
   #-------------------------------------------------------------------------------
-  
   # Extractions set-up
 
   cat("Beginning method.\n\n")
@@ -821,7 +820,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     B_new <- c(Xindx, Yindx)
     chain <- list(B_old)
     consec_jaccards <- NULL
-    consec_sizes <- list()
+    consec_sizes <- list(c(length(B_oldx), length(B_oldy)))
     found_cycle <- found_break <- NULL
     mean_jaccards <- NULL ## add all these to update_info
     itCount <- 0

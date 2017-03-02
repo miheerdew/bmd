@@ -83,8 +83,8 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
       y <- total_sizes <- sapply(consec_size_pairs, sum) #total module size
       plot(0, 0, xlim = c(0, uilength + 1), ylim = range(y) + c(-1,1), col = "white",
             main = "module sizes", xlab = "update no.", ylab = "Module size")
-      lines(1:uilength, y)
-      points(1:uilength, y,
+      lines(0:uilength, y)
+      points(0:uilength, y,
              col = as.numeric(updateInfoi[[1]]$found_cycle) + 1,
              pch = as.numeric(updateInfoi[[1]]$found_break) + 16)
       dev.off()
