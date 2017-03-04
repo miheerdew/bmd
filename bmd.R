@@ -2,7 +2,10 @@ source("makeVars.R")
 source("stdize.R")
 bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd(),
                  updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
-                 updateMethod = 2, initializeMethod = 2, inv.length = TRUE, add_rate = 1, return_zs = TRUE) {
+                 updateMethod = 2, initializeMethod = 2, inv.length = TRUE, add_rate = 1, return_zs = TRUE,
+                 bmd_index=NULL) {
+  # bmd_index : A function that maps each vertex to the index of the bimodule
+  #           it contains.
 
   if (FALSE) {
     alpha = 0.05
@@ -821,6 +824,12 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     chain <- list(B_old)
     consec_jaccards <- NULL
     consec_sizes <- list(c(length(B_oldx), length(B_oldy)))
+    if(is.function(bmd_index)){
+      consec_composition <- list(table(sapply(B_old,bmd_index)))
+    } else {
+      consec_composition <- NULL
+    }
+
     found_cycle <- found_break <- NULL
     mean_jaccards <- NULL ## add all these to update_info
     itCount <- 0
@@ -857,7 +866,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       consec_jaccards <- c(consec_jaccards, consec_jaccard)
       mean_jaccards <- c(mean_jaccards, mean(jaccards))
       consec_sizes <- c(consec_sizes, list(c(length(B_newx), length(B_newy))))
-      
+      if(is.function(bmd_index)){
+        consec_composition <- c(consec_composition,
+                                list(table(sapply(B_new, bmd_index))))
+      }
       if (updateOutput) {
         cat(paste0("Update ", itCount, 
                    " is size ", length(B_new), 
@@ -933,6 +945,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     update_info[[comm_indx]] <- list("mean_jaccards" = mean_jaccards,
                                      "consec_jaccards" = consec_jaccards,
                                      "consec_sizes"= consec_sizes,
+                                     "consec_composition"=consec_composition,
                                      "found_cycle" = found_cycle,
                                      "found_break" = found_break)
     remainingX <- setdiff(remainingX, B_new)

@@ -3,7 +3,8 @@
 # Otherwise there should be a file called -
 #       paste0("config-files/sims_config-",simname,".R")
 
-simname <- "manyblocks-sparse"
+SIMNAMES <- c("oneblock-varAdj","manyblocks-sparse","manyblocks-sparse-varAdj")
+simname <- SIMNAMES[3]
 
 ns <- c(100, 500, seq(1000, 5000, by = 1000)) #The sample sizes to run.
 doBRIM <- FALSE #Should we test BRIM?
