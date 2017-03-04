@@ -19,6 +19,9 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
     dir.create(run_dir)
   }
 
+  cat("calculating full cross-correlation matrix...\n")
+  full_cross_cor <- cor(X,Y)
+
   cat("calculating basic stats...\n")
 
   # Calculating basic stats
@@ -106,7 +109,7 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
     comm_df <- data.frame("X_indx" = rep(X_mch, each = nY),
                           "Y_indx" = rep(Y_mch, nX))
 
-    corrs <- cor(X_scl[ , X_mch], Y_scl[ , Y_mch])
+    corrs <- full_cross_cor[X_mch, Y_mch]
     comm_df$corrs <- as.vector(t(corrs))
 
     if (GTEx) {
@@ -230,7 +233,7 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
   cat("computing within-community correlations...\n")
   comm_corrs <- unlist(lapply(comm_dfs, function (df) df$corrs))
   cat("computing all correlations...\n")
-  all_corrs <- as.vector(cor(X, Y))
+  all_corrs <- as.vector(full_cross_cor)
 
   cat("formatting for correlation density plot...\n")
   corrs0 <- density(all_corrs)
@@ -338,7 +341,7 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
   #-------------------------------------------------------------
   # COMPUTE: CORMAT
   #-------------------------------------------------------------
-  crossCors <- cor(X, Y)
+  crossCors <- full_cross_cor
   Yindxs <- nrow(crossCors) + 1:ncol(crossCors)
   X_sets <- results$communities$X_sets[commsizes_ord]
   Y_sets <- lapply(results$communities$Y_sets, function (C) match(C, Yindxs))[commsizes_ord]

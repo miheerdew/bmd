@@ -1,7 +1,6 @@
 library(MASS)
 library(Matrix)
 library(lpbrim)
-library(igraph)
 source("sims_config.R")
 source("mvrnormR.R")
 source("ggcor.R")
@@ -71,8 +70,8 @@ for (n in ns) {
     crossindx2 <- (dim(G)[2] + 1):dimGiAdj
     GiAdj[crossindx1, crossindx2] <- G[i, , ]
     GiAdj[crossindx2, crossindx1] <- t(G[i, , ])
-    Gi <- graph.adjacency(GiAdj, mode = "undirected")
-    componentsi <- components(Gi)
+    Gi <- igraph::graph.adjacency(GiAdj, mode = "undirected")
+    componentsi <- igraph::components(Gi)
     nci <- max(componentsi$membership)
     cci <- lapply(1:nci, function (c) which(componentsi$membership == c))
     
@@ -97,10 +96,12 @@ for (n in ns) {
 
   # Plotting correlation matrices
   combineData <- cbind(X, Y)
-  combineCors <- cor(combineData)
   dX <- ncol(X); dY <- ncol(Y)
   
   if (plot_full_mat) {
+    cat("--calculating combined cor")
+    combineCors <- cor(combineData)
+
     cat("--plotting full matrix...\n")
     # Order by connected components
     Xindx <- unlist(lapply(component_list, function (cc) cc[cc <= dX]))
