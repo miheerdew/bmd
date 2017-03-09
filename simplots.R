@@ -8,7 +8,7 @@ source("ggcor.R")
 source("best_match.R")
 
 # Setting up score vectors
-BMD_bm <- BMD_bj <- matrix(0, 2, length(ns))
+BMD_bm <- BMD_bj <- numeric(length(ns))
 
 for (n in ns) {
   
@@ -24,19 +24,8 @@ for (n in ns) {
   load(results_fname(n, method="bmd"))
   bm_results <- sim_postanalysis(BMDresults, X, Y, run_name = paste0("bmd_",fn),
                    run_dir = plots_dir(n, method="bmd"))
-  BMD_bm[1, which(ns == n)] <- bm_results['BestMatch']
-  BMD_bj[1, which(ns == n)] <- bm_results['BackgroundMatch']
-  
-  rm(bm_results, BMDtime, BMDresults)
-  gc()
-  
-  # Plotting for BMD-kb
-  cat("----doing BMD-kb\n")
-  load(results_fname(n, method="bmd-kb"))
-  bm_results <- sim_postanalysis(BMDresults, X, Y, run_name = paste0("bmd_",fn),
-                   run_dir = plots_dir(n, method="bmd-kb"))
-  BMD_bm[2, which(ns == n)] <- bm_results['BestMatch']
-  BMD_bj[2, which(ns == n)] <- bm_results['BackgroundMatch']
+  BMD_bm[which(ns == n)] <- bm_results['BestMatch']
+  BMD_bj[which(ns == n)] <- bm_results['BackgroundMatch']
   
   rm(bm_results, BMDtime, BMDresults)
   gc()
@@ -58,12 +47,10 @@ for (n in ns) {
 png(file.path(saveDir, "plots/best_match.png"))
 plot(0, 0, main = "Best Match", xlim = range(ns) + c(-1, 1),
      ylim = c(0, 1), xlab = "n", ylab = "Best Match Metric")
-points(ns, BMD_bm[1, ], col = "red", pch = 15)
-lines(ns, BMD_bm[1, ], col = "red", lty = 1)
-points(ns, BMD_bm[2, ], col = "green", pch = 16)
-lines(ns, BMD_bm[2, ], col = "green", lty = 2)
-legend("bottomleft", legend = c("BMD", "BMD-kb"), lty = 1:2,
-       col = c("red", "green"), pch = 15:16)
+points(ns, BMD_bm, col = "red", pch = 15)
+lines(ns, BMD_bm, col = "red", lty = 1)
+legend("bottomleft", legend = c("BMD"), lty = 1,
+       col = c("red"), pch = 15)
 dev.off()
 
 
@@ -71,10 +58,8 @@ dev.off()
 png(file.path(saveDir, "plots/background_jaccard.png"))
 plot(0, 0, main = "Background Jaccard", xlim = range(ns) + c(-1, 1),
      ylim = c(0, 1), xlab = "n", ylab = "Background Jaccard Metric")
-points(ns, BMD_bj[1, ], col = "red", pch = 15)
-lines(ns, BMD_bj[1, ], col = "red", lty = 1)
-points(ns, BMD_bj[2, ], col = "green", pch = 16)
-lines(ns, BMD_bj[2, ], col = "green", lty = 2)
-legend("bottomleft", legend = c("BMD", "BMD-kb"), lty = 1:2,
-       col = c("red", "green"), pch = 15:16)
+points(ns, BMD_bj, col = "red", pch = 15)
+lines(ns, BMD_bj, col = "red", lty = 1)
+legend("bottomleft", legend = c("BMD"), lty = 1,
+        col = c("red"), pch = 15)
 dev.off()
