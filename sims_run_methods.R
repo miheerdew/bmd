@@ -4,6 +4,7 @@ library(lpbrim)
 source("bmd.R")
 source("formatBRIM.R")
 source("sims_config.R")
+source("sims_debug_tools.R")
 
 for (n in ns) {
 
@@ -50,8 +51,10 @@ for (n in ns) {
   BMDresults <- bmd(X, Y, tag = n,
                     saveDir = file.path(saveDir, "BMD_saves"),
                     updateMethod = 5, initializeMethod = 3,
-                    Dud_tol = 10, OL_tol = 10, time_limit = 1800)
+                    Dud_tol = 10, OL_tol = 10, time_limit = 1800,
+                    bmd_index = bmd_index, calc_full_cor=TRUE)
   )
+
   BMDtime <- proc.time()[3] - BMDtime
   save(BMDtime, BMDresults,
        file = results_fname(n, method="bmd"))
@@ -61,7 +64,8 @@ for (n in ns) {
   BMDresults <- bmd(X, Y, tag = n,
                     saveDir = file.path(saveDir, "BMD_saves"),
                     updateMethod = 6, initializeMethod = 3,
-                    Dud_tol = 10, OL_tol = 10, time_limit = 1800)
+                    Dud_tol = 10, OL_tol = 10, time_limit = 1800,
+                    bmd_index = bmd_index, calc_full_cor=TRUE)
   )
   BMDtime <- proc.time()[3] - BMDtime
   save(BMDtime, BMDresults,

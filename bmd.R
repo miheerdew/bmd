@@ -2,7 +2,10 @@ source("makeVars.R")
 source("stdize.R")
 bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd(),
                  updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
-                 updateMethod = 2, initializeMethod = 2, inv.length = TRUE, add_rate = 1, return_zs = TRUE) {
+                 updateMethod = 2, initializeMethod = 2, inv.length = TRUE, add_rate = 1, return_zs = TRUE,
+                 bmd_index=NULL, calc_full_cor=FALSE) {
+  # bmd_index : A function that maps each vertex to the index of the bimodule
+  #           it contains.
 
   if (FALSE) {
     alpha = 0.05
@@ -126,6 +129,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     }
   }
 
+  if(calc_full_cor){
+    cat("Calculating the full cross correlation matrix.\n")
+    full_xy_cor = cor(X,Y)
+  }
 
   # Setup calculations    
 
@@ -137,6 +144,15 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   
   Xindx <- 1:dx
   Yindx <- (dx + 1):(dx + dy)
+
+  cross_cor <- function(X_indx=1:dx, Y_indx=1:dy){
+    if (exists("full_xy_cor")){
+      return(full_xy_cor[X_indx, Y_indx])
+    } else {
+      return(cor(as.matrix(X[,X_indx]), as.matrix(Y[,Y_indx])))
+    }
+
+  }
 
   # Defining pval function
   pvalFun <- function (B) {
@@ -312,7 +328,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       fixdMat <- as.matrix(Y[ , fixdIndx])
       
       # Getting test stats and indices
-      all_stats <- n^(1 / 2) * colSums(cor(fixdMat, X))
+      all_stats <- n^(1 / 2) * rowSums(cross_cor(Y_indx=fixdIndx))
       nTest <- dx
       testOrder <- order(all_stats, decreasing = TRUE)
       
@@ -324,7 +340,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       fixdMat <- as.matrix(X[ , fixdIndx])
       
       # Getting test stats and indices
-      all_stats <- n^(1 / 2) * colSums(cor(fixdMat, Y))
+      all_stats <- n^(1 / 2) * colSums(cross_cor(X_indx=fixdIndx))
       nTest <- dy
       testOrder <- order(all_stats, decreasing = TRUE)
       
@@ -361,13 +377,13 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
         if (K0 > 0) {
           R_k_A0 <- rowSums(cor(X[ , A1], X[ , A0]))
         }
-        Rhat_k_B <- rowSums(cor(X[ , A1], Y[ , fixdIndx]))
+        Rhat_k_B <- rowSums(cross_cor(A1, fixdIndx))
         RA1 <- cor(X[ , A1])
       } else {
         if (K0 > 0) {
           R_k_A0 <- rowSums(cor(Y[ , A1], Y[ , A0]))
         }
-        Rhat_k_B <- rowSums(cor(Y[ , A1], X[ , fixdIndx]))
+        Rhat_k_B <- colSums(cross_cor(fixdIndx, A1))
         RA1 <- cor(Y[ , A1])
       }
       
@@ -536,7 +552,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       # Calculating the variances
       {
         # General calcs
-        xyCors <- cor(X_scaled, fixdMat)
+        xyCors <- cross_cor(Y_indx = fixdIndx)
         y4 <- colSums(X_scaled^4)
         xRowSum <- rowSums(fixdMat)
         xRowSum2 <- tcrossprod(xyCors, fixdMat^2)
@@ -570,7 +586,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       # Calculating the variances
       {
         # General calcs
-        xyCors <- cor(Y_scaled, fixdMat)
+        xyCors <- t(cross_cor(X_indx=fixdIndx))
         y4 <- colSums(Y_scaled^4)
         xRowSum <- rowSums(fixdMat)
         xRowSum2 <- tcrossprod(xyCors, fixdMat^2)
@@ -637,7 +653,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       fixdIndx <- match(B, Yindx)
       fixdMat <- as.matrix(Y[ , fixdIndx])
       Uis <- X
-      cormeans <- as.vector(rowMeans(cor(X, fixdMat)))
+      cormeans <- as.vector(rowMeans(cross_cor(Y_indx = fixdIndx)))
       
     } else {
       
@@ -645,7 +661,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       fixdIndx <- match(B, Xindx)
       fixdMat <- as.matrix(X[ , fixdIndx])
       Uis <- Y
-      cormeans <- as.vector(rowMeans(cor(Y, fixdMat)))
+      cormeans <- as.vector(colMeans(cross_cor(X_indx=fixdIndx)))
       
     }
     
@@ -674,13 +690,13 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   
   initialize3 <- function(u){
     if (u <= dx) {
-      cor_to_u <- cor(X_scaled[,u], Y_scaled)
+      cor_to_u <- cross_cor(X_indx=u)
       fischer_tranformed_cor <- atanh(cor_to_u)*sqrt(n-3)
       pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
       successes <- Yindx[bhy(pvals, alpha)]
     } else {
       if (u > dx) {
-        cor_to_u <- cor(Y_scaled[,u-dx], X_scaled)
+        cor_to_u <- cross_cor(Y_indx=u-dx)
         fischer_tranformed_cor <- atanh(cor_to_u)*sqrt(n-3)
         pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
         successes <- Xindx[bhy(pvals, alpha)]
@@ -723,7 +739,6 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   }
   
   #-------------------------------------------------------------------------------
-  
   # Extractions set-up
 
   cat("Beginning method.\n\n")
@@ -821,7 +836,13 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     B_new <- c(Xindx, Yindx)
     chain <- list(B_old)
     consec_jaccards <- NULL
-    consec_sizes <- list()
+    consec_sizes <- list(c(length(B_oldx), length(B_oldy)))
+    if(is.function(bmd_index)){
+      consec_composition <- list(table(sapply(B_old,bmd_index)))
+    } else {
+      consec_composition <- NULL
+    }
+
     found_cycle <- found_break <- NULL
     mean_jaccards <- NULL ## add all these to update_info
     itCount <- 0
@@ -858,7 +879,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       consec_jaccards <- c(consec_jaccards, consec_jaccard)
       mean_jaccards <- c(mean_jaccards, mean(jaccards))
       consec_sizes <- c(consec_sizes, list(c(length(B_newx), length(B_newy))))
-      
+      if(is.function(bmd_index)){
+        consec_composition <- c(consec_composition,
+                                list(table(sapply(B_new, bmd_index))))
+      }
       if (updateOutput) {
         cat(paste0("Update ", itCount, 
                    " is size ", length(B_new), 
@@ -934,6 +958,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     update_info[[comm_indx]] <- list("mean_jaccards" = mean_jaccards,
                                      "consec_jaccards" = consec_jaccards,
                                      "consec_sizes"= consec_sizes,
+                                     "consec_composition"=consec_composition,
                                      "found_cycle" = found_cycle,
                                      "found_break" = found_break)
     remainingX <- setdiff(remainingX, B_new)

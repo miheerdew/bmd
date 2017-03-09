@@ -1,8 +1,5 @@
+#!/usr/bin/env Rscript
 source("sims_config.R")
-
-RUN <- list(sims    =FALSE,
-            methods =FALSE,
-            plots   =TRUE)
 
 if(RUN$sims){
   unlink(file.path(saveDir,"datasets"), recursive = TRUE)
@@ -15,6 +12,7 @@ if(RUN$methods){
 }
 
 if(RUN$plots){
-  unlink(file.path(saveDir,"plots"), recursive = TRUE)
+  unlink(file.path(saveDir,"plots","bmd"), recursive = TRUE)
+  unlink(file.path(saveDir,"plots","bmd-kb"), recursive = TRUE)
   source("simplots.R")
 }
