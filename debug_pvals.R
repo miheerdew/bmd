@@ -5,10 +5,18 @@ source("bmd.R")
 
 n <- 3000
 
+run_tracer <- TRUE
+
 tracer <- function(){
+  #Call tracer on alternate calls;
+  if(!run_tracer){
+    run_tracer <<- TRUE
+    return(NULL)
+  }
+  run_tracer <<- FALSE
   if(deparse(sys.call(-5)) == "bh_reject(pvals, alpha)"){
     f <- sys.frame(-5)
-    plot_pvals_by_bmd(f$pvals, f$alpha/f$mults, transformed=TRUE,cap=100)
+    plot_pval_transformed(f$pvals, f$alpha/f$mults,bmd_index)
     x <- readline(prompt="Press [enter] to continue;")
     if (x != "") {
       stop("interrupted")
