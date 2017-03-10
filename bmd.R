@@ -87,6 +87,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   
   bhy <-
     function(pvals, alpha = 0.05){
+      ####
+      # DO NOT USE THIS. USE bh_reject() instead
+      ####
       
       # Sorted p-vals
       sp = sort(pvals)
@@ -111,6 +114,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     }
   
   bh_reject <- function (pvals, alpha, conserv = TRUE) {
+    # conserv = TRUE uses the BH procedure at level 
+    #                alpha/sum(1/(1:length(pvals)))
+    # conserv = FALSE uses the BH procedure at level alpha
     
     m <- length(pvals)
     
@@ -691,17 +697,15 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   initialize3 <- function(u){
     if (u <= dx) {
       cor_to_u <- cross_cor(X_indx=u)
-      fischer_tranformed_cor <- atanh(cor_to_u)*sqrt(n-3)
-      pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
-      successes <- Yindx[bhy(pvals, alpha)]
+      indx <- Yindx
     } else {
-      if (u > dx) {
-        cor_to_u <- cross_cor(Y_indx=u-dx)
-        fischer_tranformed_cor <- atanh(cor_to_u)*sqrt(n-3)
-        pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
-        successes <- Xindx[bhy(pvals, alpha)]
-      } 
+      cor_to_u <- cross_cor(Y_indx=u-dx)
+      indx <- Xindx
     }
+    
+    fischer_tranformed_cor <- atanh(cor_to_u)*sqrt(n-3)
+    pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
+    successes <- indx[bh_reject(pvals, alpha)]
     return(successes)
   }
   
