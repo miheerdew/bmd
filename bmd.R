@@ -541,7 +541,8 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     
   }
   
-  update5 <- function (B, A = NULL, bhy = FALSE) {
+  update5 <- function (B, A = NULL, bhy = FALSE,
+                       restrict=TRUE) {
     
     if (length(B) == 0)
       return(integer(0))
@@ -550,6 +551,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     nFixd <- length(B)
     
     if (test_X) {
+      prevIndx <- match(A, Xindx)
       
       # Getting fixed matrix
       fixdIndx <- match(B, Yindx)
@@ -585,6 +587,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       
     } else {
       
+      prevIndx <- match(A, Yindx)
       # Getting indices
       fixdIndx <- match(B, Xindx)
       fixdMat <- as.matrix(X_scaled[ , fixdIndx])
@@ -632,7 +635,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       successes <- bh_reject(pvals, alpha)
     }
     
-    
+    if(restrict){
+      cutoff2 <- max(pvals[prevIndx])
+      successes <- Filter(function(i) pvals[i] <= cutoff2, successes)
+    }
     # Return indices
     
     if (test_X) {
@@ -864,9 +870,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       #if (itCount == 50)
       #  break
       
-      B_newx <- update(B_oldy, B_oldx)
+      B_newx <- update(B_oldy, B_oldx, restrict=TRUE)
       if (length(B_newx) >= 1) {
-        B_newy <- update(B_newx, B_oldy)
+        B_newy <- update(B_newx, B_oldy, restrict=TRUE)
       } else {
         B_newy <- integer(0)
         break

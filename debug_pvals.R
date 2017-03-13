@@ -31,7 +31,7 @@ tracer <- function(){
 
 ################
 # Start execution
-setBreakpoint("bmd.R#130", tracer = tracer)
+setBreakpoint("bmd.R#133", tracer = tracer)
 load(dataset_fname(n))
 BMDresults <- bmd(X, Y, tag = n,
                   saveDir = file.path(saveDir, "BMD_saves"),
