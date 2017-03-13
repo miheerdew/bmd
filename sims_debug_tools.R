@@ -26,6 +26,10 @@ bmd_index <- function(u){
   return(0)
 }
 
+bmd_proportion <- function(nodes){
+    table(sapply(nodes, bmd_index))
+}
+
 #The indices corresponding to the bimodules. Accessible as list
 bmd_indices <- c(lapply(1:nBM, function(b) 1:(nB*sB) + (b-1)*nB*sB))
 noise_indices <- 1:(nBg*sB) + signal_nodes

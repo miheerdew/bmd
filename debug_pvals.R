@@ -5,6 +5,7 @@ source("bmd.R")
 
 n <- 3000
 
+run_browser <- TRUE
 run_tracer <- TRUE
 
 tracer <- function(){
@@ -18,8 +19,12 @@ tracer <- function(){
     f <- sys.frame(-5)
     plot_pval_transformed(f$pvals, f$alpha/f$mults,bmd_index)
     x <- readline(prompt="Press [enter] to continue;")
-    if (x != "") {
-      stop("interrupted")
+    if (x == "q") {
+      stop("Ending debug")
+    } else if (x == "b") {
+      run_browser <<- TRUE
+    } else {
+      run_browser <<- FALSE
     }
   }
 }
