@@ -153,9 +153,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
 
   cross_cor <- function(X_indx=1:dx, Y_indx=1:dy){
     if (exists("full_xy_cor")){
-      return(full_xy_cor[X_indx, Y_indx])
+      return(full_xy_cor[X_indx, Y_indx, drop=FALSE])
     } else {
-      return(cor(as.matrix(X[,X_indx]), as.matrix(Y[,Y_indx])))
+      return(cor(X[,X_indx, drop=FALSE], Y[,Y_indx,drop=FALSE]))
     }
 
   }
