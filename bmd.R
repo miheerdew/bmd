@@ -110,6 +110,13 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       }
     }
   
+  cluster_thres <- function (zs) {
+    
+    clust <- Ckmeans.1d.dp(zs, 2)$cluster
+    thres <- min(zs[clust == 2])
+    return(which(zs >= thres))
+  }
+  
   bh_reject <- function (pvals, alpha, conserv = TRUE) {
     
     m <- length(pvals)
@@ -535,7 +542,8 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     
   }
   
-  update5 <- function (B, A = NULL, bhy = FALSE) {
+  update5 <- function (B, A = NULL, bhy = FALSE,
+                       clusterThres = FALSE) {
     
     if (length(B) == 0)
       return(integer(0))
@@ -611,8 +619,6 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       }
       
     }
-    
-    
       
     allvars <- (star1 + 0.25 * (star2 + star3 + star4) - dagger1 - dagger2) / 
       (n - 1)
@@ -626,6 +632,11 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
       successes <- bh_reject(pvals, alpha)
     }
     
+    if (clusterThres) {
+      successes2 <- cluster_thres(zstats)
+      if (length(successes) > length(successes2))
+        successes <- successes2
+    }
     
     # Return indices
     
