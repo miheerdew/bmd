@@ -59,16 +59,18 @@ for (n in ns) {
   save(BMDtime, BMDresults,
        file = results_fname(n, method="bmd"))
   
-  BMDtime <- proc.time()[3]
-  suppressWarnings(
-  BMDresults <- bmd(X, Y, tag = n,
-                    saveDir = file.path(saveDir, "BMD_saves"),
-                    updateMethod = 6, initializeMethod = 3,
-                    Dud_tol = 10, OL_tol = 10, time_limit = 1800,
-                    bmd_index = bmd_index, calc_full_cor=TRUE)
-  )
-  BMDtime <- proc.time()[3] - BMDtime
-  save(BMDtime, BMDresults,
-       file = results_fname(n, method="bmd-kb"))
+  if (doKB) {
+    BMDtime <- proc.time()[3]
+    suppressWarnings(
+    BMDresults <- bmd(X, Y, tag = n,
+                      saveDir = file.path(saveDir, "BMD_saves"),
+                      updateMethod = 6, initializeMethod = 3,
+                      Dud_tol = 10, OL_tol = 10, time_limit = 1800,
+                      bmd_index = bmd_index, calc_full_cor=TRUE)
+    )
+    BMDtime <- proc.time()[3] - BMDtime
+    save(BMDtime, BMDresults,
+         file = results_fname(n, method="bmd-kb"))
+  }
   
 }

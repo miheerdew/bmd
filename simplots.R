@@ -30,17 +30,20 @@ for (n in ns) {
   rm(bm_results, BMDtime, BMDresults)
   gc()
   
-  # Plotting for BMD-kb
-  cat("----doing BMD-kb\n")
-  load(results_fname(n, method="bmd-kb"))
-  bm_results <- sim_postanalysis(BMDresults, X, Y, run_name = paste0("bmd_",fn),
-                   run_dir = plots_dir(n, method="bmd-kb"))
-  BMD_bm[2, which(ns == n)] <- bm_results['BestMatch']
-  BMD_bj[2, which(ns == n)] <- bm_results['BackgroundMatch']
   
-  rm(bm_results, BMDtime, BMDresults)
-  gc()
-
+  if (doKB) {
+    # Plotting for BMD-kb
+    cat("----doing BMD-kb\n")
+    load(results_fname(n, method="bmd-kb"))
+    bm_results <- sim_postanalysis(BMDresults, X, Y, run_name = paste0("bmd_",fn),
+                     run_dir = plots_dir(n, method="bmd-kb"))
+    BMD_bm[2, which(ns == n)] <- bm_results['BestMatch']
+    BMD_bj[2, which(ns == n)] <- bm_results['BackgroundMatch']
+    
+    rm(bm_results, BMDtime, BMDresults)
+    gc()
+  }
+  
   if (doBRIM) {
     if (doBRIM) load(results_fname(n, method="brim"))
     # Plotting for BRIM
