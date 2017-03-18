@@ -1,7 +1,7 @@
 library(reshape2)
 library(ggplot2)
 
-ggcor <- function (cormat, fn, removeLowerTri = FALSE, 
+ggcor <- function (cormat, fn = NULL, removeLowerTri = FALSE, 
                    fisher = TRUE, n = NULL, title = "corrstats") {
   
   diag(cormat) <- 0
@@ -38,13 +38,13 @@ ggcor <- function (cormat, fn, removeLowerTri = FALSE,
     
   }
   
-  
-  
-  png(fn)
-  print(ggplot(data = melted_cormat, aes(x = Var2, y = Var1, fill = value)) + 
-        geom_tile() + colorscale + ggtitle(title)
-        
-  )
-  dev.off()
-  
+  p <-ggplot(data = melted_cormat, aes(x = Var2, y = Var1, fill = value)) + 
+    geom_tile() + colorscale + ggtitle(title)
+  if (!is.null(fn)) {
+    png(fn)
+    print(p)
+    dev.off()
+  } else {
+    return(p)
+  }
 }
