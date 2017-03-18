@@ -15,15 +15,15 @@ source("mvrnormR.R")
 sim_eQTL_network <- function (par_list, randomizeBeta = TRUE) {
   
   
-  n = 500
-  b = 10
-  cmin = 50
-  cmax = 50
-  bgmult = 1 
-  betamean = 1 
-  p = 1 
-  rho = 0.5
-  s2 = 1
+  n = par_list$n
+  b = par_list$b
+  cmin = par_list$cmin
+  cmax = par_list$cmax
+  bgmult = par_list$bgmult
+  betamean = par_list$betamean
+  p = par_list$p
+  rho = par_list$rho
+  s2 = par_list$s2
   
   avgsize <- cmin + (cmax - cmin) / 2
   
