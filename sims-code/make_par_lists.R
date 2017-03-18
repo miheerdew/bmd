@@ -23,7 +23,7 @@ pars <- c("n")
 xlab <- "Sample Size"
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- round(2000 * (par_seq_dec + min(par_seq_dec) * 
+par_settings[1, ] <- round(500 * (par_seq_dec + min(par_seq_dec) * 
                                      as.numeric(shove_dec)))
 
 save(par_list,
@@ -163,3 +163,7 @@ save(par_list,
      par_divs,
      par_dirs,
      file = "sims-results/sbm-par-lists/experiment7.RData")
+
+
+
+writeLines(total_expers, "sims-results/exper-names.txt")

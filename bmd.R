@@ -15,14 +15,16 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     OL_tol = Inf
     Dud_tol = Inf
     time_limit = 18000
-    updateMethod = 2
-    initializeMethod = 2
+    updateMethod = 5
+    initializeMethod = 3
     updateOutput = TRUE
     throwInitial = TRUE
     inv.length = TRUE
     time_limit = Inf
     add_rate = 1
     return_zs = TRUE
+    calc_full_cor=FALSE
+    bmd_index=NULL
   }
   
   start_second <- proc.time()[3]
@@ -136,11 +138,6 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     }
   }
 
-  if(calc_full_cor || dx * dy <= 1e7){
-    cat("Calculating the full cross correlation matrix.\n")
-    full_xy_cor = cor(X,Y)
-  }
-
   # Setup calculations    
 
   n <- nrow(X)
@@ -149,16 +146,21 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
   X_scaled <- scale(X)
   Y_scaled <- scale(Y)
   
+  if(calc_full_cor || dx * dy <= 1e7){
+    cat("Calculating the full cross correlation matrix.\n")
+    full_xy_cor = cor(X,Y)
+  }
+  
   Xindx <- 1:dx
   Yindx <- (dx + 1):(dx + dy)
 
   cross_cor <- function(X_indx=1:dx, Y_indx=1:dy){
     if (exists("full_xy_cor")){
-      return(full_xy_cor[X_indx, Y_indx])
+      return(full_xy_cor[X_indx, Y_indx, drop = FALSE])
     } else {
-      return(cor(as.matrix(X[,X_indx]), as.matrix(Y[,Y_indx])))
+      return(cor(as.matrix(X[,X_indx, drop = FALSE]), as.matrix(Y[,Y_indx, drop = FALSE])))
     }
-
+    
   }
 
   # Defining pval function
@@ -555,7 +557,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       
       # Getting fixed matrix
       fixdIndx <- match(B, Yindx)
-      fixdMat <- as.matrix(Y_scaled[ , fixdIndx])
+      fixdMat <- as.matrix(Y_scaled[ , fixdIndx, drop = FALSE])
 
       # Calculating the variances
       {
@@ -589,7 +591,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       
       # Getting indices
       fixdIndx <- match(B, Xindx)
-      fixdMat <- as.matrix(X_scaled[ , fixdIndx])
+      fixdMat <- as.matrix(X_scaled[ , fixdIndx, drop = FALSE])
       
       # Calculating the variances
       {
@@ -779,19 +781,21 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
   starttime <- paste0(unlist(strsplit(as.character(starttime), " ", fixed = TRUE)), collapse = "_")
   starttime <- gsub(":", "-", starttime)
   
-  if (!is.null(saveDir))
+  if (!is.null(saveDir)) {
     if (!is.null(tag)) {
       fn <- file.path(saveDir, paste0(tag, ".RData"))
     } else {
       fn <- file.path(saveDir, paste0("unnamed", starttime, ".RData"))
     }
-}
+  }
   
-  cat("doing test save\n")
-  cat("fn is", fn, "\n")
-  # Test save
-  testsave <- "testsave"
-  save(testsave, file = fn)
+  if (!is.null(saveDir)) {
+    cat("doing test save\n")
+    cat("fn is", fn, "\n")
+    # Test save
+    testsave <- "testsave"
+    save(testsave, file = fn)
+  }
   
   while (length(c(remainingX, remainingY)) > 0) {
     
@@ -825,10 +829,12 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     if (length(B0x) <= 1) {
       Dud_count <- Dud_count + 1
       
-      # Saving status
-      save(loopCount, comms, initial.sets, final.sets, 
-           OL_count, Dud_count,
-           file = fn)
+      if (!is.null(saveDir)) {
+        # Saving status
+        save(loopCount, comms, initial.sets, final.sets, 
+            OL_count, Dud_count,
+            file = fn)
+      }
       
       if (Dud_count > Dud_tol)
         break
@@ -990,10 +996,12 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     cat(paste0(sum(comm_nodes <= dx), " X vertices in communities.\n"))
     cat(paste0(sum(comm_nodes > dx), " Y vertices in communities.\n"))
     
-    # Saving status
-    save(loopCount, chain, comms, initial.sets, final.sets, 
-         OL_count, Dud_count,
-         file = fn)
+    if (!is.null(saveDir)) {
+      # Saving status
+      save(loopCount, chain, comms, initial.sets, final.sets, 
+          OL_count, Dud_count,
+          file = fn)
+    }
     
     current_time <- proc.time()[3] - start_second
     if (current_time > time_limit)
