@@ -1,8 +1,8 @@
 source("makeVars.R")
 source("stdize.R")
-bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd(),
+bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
                  updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
-                 updateMethod = 2, initializeMethod = 2, inv.length = TRUE, add_rate = 1, return_zs = TRUE,
+                 updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1, return_zs = TRUE,
                  bmd_index=NULL, calc_full_cor=FALSE) {
   # bmd_index : A function that maps each vertex to the index of the bimodule
   #           it contains.
@@ -11,7 +11,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
     alpha = 0.05
     OL_thres = 0.9
     tag = NULL
-    saveDir = getwd()
+    saveDir = NULL
     OL_tol = Inf
     Dud_tol = Inf
     time_limit = 18000
@@ -27,7 +27,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   
   start_second <- proc.time()[3]
   starttime <- Sys.time()
-  if (!dir.exists(saveDir))
+  if (!is.null(saveDir) && !dir.exists(saveDir))
     dir.create(saveDir)
   
   
@@ -778,11 +778,14 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = getwd
   # Making save string
   starttime <- paste0(unlist(strsplit(as.character(starttime), " ", fixed = TRUE)), collapse = "_")
   starttime <- gsub(":", "-", starttime)
-  if (!is.null(tag)) {
-    fn <- file.path(saveDir, paste0(tag, ".RData"))
-  } else {
-    fn <- file.path(saveDir, paste0("unnamed", starttime, ".RData"))
-  }
+  
+  if (!is.null(saveDir))
+    if (!is.null(tag)) {
+      fn <- file.path(saveDir, paste0(tag, ".RData"))
+    } else {
+      fn <- file.path(saveDir, paste0("unnamed", starttime, ".RData"))
+    }
+}
   
   cat("doing test save\n")
   cat("fn is", fn, "\n")

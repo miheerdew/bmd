@@ -8,27 +8,32 @@
 # betamean = mean of exponential distribution for betas
 # rho = intracorrelations of X variables
 # p = average edge density of bimodules
-# s2 = noise variance
+# s2 = noise variance scaling
 
 source("mvrnormR.R")
 
 sim_eQTL_network <- function (n = 100, b = 10, cmin = 10, cmax = 100,
                               bgmult = 10, betamean = 1, p = 0.5, rho = 0.5,
-                              s2 = NULL) {
+                              s2 = 1, randomizeBeta = FALSE) {
   
   avgsize <- cmin + (cmax - cmin) / 2
   
-  if (is.null(s2)) {
-    mavg <- p * avgsize
-    s2 <- mavg * (1 - rho + rho * mavg) * betamean
-  }
+  # Setting noise variance
+  mavg <- p * avgsize
+  nv <- s2 * mavg * (1 - rho + rho * mavg) * betamean
   
-  Xsizes <- sample(10:100, b, replace = TRUE)
-  Ysizes <- sample(10:100, b, replace = TRUE)
+  # Getting bimodule sizes
+  if (cmin < cmax) {
+    Xsizes <- sample(cmin:cmax, b, replace = TRUE)
+    Ysizes <- sample(cmin:cmax, b, replace = TRUE)
+  } else {
+    Xsizes <- Ysizes <- rep(cmin, b)
+  }
   dbg <- round(bgmult * b * avgsize)
   dx <- sum(Xsizes) + dbg; dy <- sum(Ysizes) + dbg
-  X <- matrix(numeric(dx * n), nrow = n); Y <- matrix(numeric(dy * n), nrow = n)
   
+  # Initializing loop
+  X <- matrix(numeric(dx * n), nrow = n); Y <- matrix(numeric(dy * n), nrow = n)
   Xindx <- 1; Yindx <- 1
   for (i in 1:b) {
     
@@ -38,13 +43,16 @@ sim_eQTL_network <- function (n = 100, b = 10, cmin = 10, cmax = 100,
     MindxX <- 1:Xsizes[i]
     MindxY <- (Xsizes[i] + 1):(Xsizes[i] + Ysizes[i])
     
-    # Generating eQTLs and making data
+    # Generating eQTLs
     eQTLs <- matrix(rbinom(Xsizes[i] * Ysizes[i], 1, p), ncol = Ysizes[i])
-    eQTLs[eQTLs == 1] <- rexp(sum(eQTLs), rate = 1 / betamean)
+    if (randomizeBeta)
+      eQTLs[eQTLs == 1] <- rexp(sum(eQTLs), rate = 1 / betamean)
+    
+    # Making data
     SigmaX <- (1 - rho) * diag(Xsizes[i]) + 
       matrix(rho, ncol = Xsizes[i], nrow = Xsizes[i])
     Xi <- mvrnormR(n, rep(0, Xsizes[i]), SigmaX)
-    noisevec <- rnorm(n * Ysizes[i], sd = sqrt(s2))
+    noisevec <- rnorm(n * Ysizes[i], sd = sqrt(nv))
     noisemat <- matrix(noisevec, nrow = n)
     Yi <- Xi %*% eQTLs + noisemat
     
