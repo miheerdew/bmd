@@ -136,7 +136,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     }
   }
 
-  if(calc_full_cor){
+  if(calc_full_cor || dx * dy <= 1e7){
     cat("Calculating the full cross correlation matrix.\n")
     full_xy_cor = cor(X,Y)
   }

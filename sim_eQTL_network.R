@@ -12,9 +12,18 @@
 
 source("mvrnormR.R")
 
-sim_eQTL_network <- function (n = 100, b = 10, cmin = 10, cmax = 100,
-                              bgmult = 10, betamean = 1, p = 0.5, rho = 0.5,
-                              s2 = 1, randomizeBeta = FALSE) {
+sim_eQTL_network <- function (par_list, randomizeBeta = TRUE) {
+  
+  
+  n = 500
+  b = 10
+  cmin = 50
+  cmax = 50
+  bgmult = 1 
+  betamean = 1 
+  p = 1 
+  rho = 0.5
+  s2 = 1
   
   avgsize <- cmin + (cmax - cmin) / 2
   
@@ -72,6 +81,26 @@ sim_eQTL_network <- function (n = 100, b = 10, cmin = 10, cmax = 100,
   
   return(list("X" = X, "Y" = Y))
   
+}
+
+make_param_list <- function (n = 500,
+                             b = 10,
+                             cmin = 100,
+                             cmax = 100,
+                             bgmult = 1,
+                             betamean = 1,
+                             p = 1,
+                             rho = 0.5,
+                             s2 = 1) {
+  return(list("n" = n,
+              "b" = b,
+              "cmin" = cmin,
+              "cmax" = cmax,
+              "bgmult" = bgmult,
+              "betamean" = betamean,
+              "p" = 1,
+              "rho" = rho,
+              "s2" = s2))
 }
     
     
