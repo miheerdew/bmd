@@ -50,9 +50,9 @@ makePerformancePlot <-  function (fn = NULL, meanMat, sdMat = NULL,
       lines(xvals, meanMat[meth, ], lty = j + 1, lwd = lwd)
       if (tnmi) {
         abline(h = tonmi(0.95, tnmi_a), lwd = lwd)
-        text(y = tonmi(0.95, tnmi_a), pos = 3, cex = cex.lab,
+        text(y = tonmi(0.95, tnmi_a), pos = 1, cex = cex.lab,
              x = paramVec[round(length(paramVec) * 0.75)],
-             labels = c("oNMI = 0.95"))
+             labels = c("0.95"))
       }
       
     } else {

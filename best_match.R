@@ -24,7 +24,7 @@ best_match_bimodule <- function (C1, C2, bg1, bg2) {
   
   n <- length(C1)
   m <- length(C2)
-  J <- J2 <- matrix(0, n, m)
+  J <- J1 <- J2 <- matrix(0, n, m)
   
   # Computing jaccard distance between background declarations
   
@@ -55,19 +55,24 @@ best_match_bimodule <- function (C1, C2, bg1, bg2) {
         C2j <- C2[[j]]
         
         J[i, j] <- jaccard(C1i, C2j)
-        J2[i, j] <- length(intersect(C1i, C2j)) / length(C2j)
+        J1[i, j] <- 1 - length(intersect(C1i, C2j)) / length(C1i)
+        J2[i, j] <- 1 - length(intersect(C1i, C2j)) / length(C2j)
         
       }
       
     }
     
     BM <- (sum(apply(J, 1, min)) + sum(apply(J, 2, min))) / (2 * (n + m))
+    BM1 <- (sum(apply(J1, 1, min)) + sum(apply(J1, 2, min))) / (2 * (n + m))
     BM2 <- (sum(apply(J2, 1, min)) + sum(apply(J2, 2, min))) / (2 * (n + m))
     
 
   }
   
-  return(c("BestMatch" = 1 - BM, "BestMatch2" = 1 - BM2, "BackgroundMatch" = 1 - BJ))
+  return(c("BestMatch" = 1 - BM, 
+           "BestMatch1" = 1 - BM1,
+           "BestMatch2" = 1 - BM2, 
+           "BackgroundMatch" = 1 - BJ))
   
 }
     
