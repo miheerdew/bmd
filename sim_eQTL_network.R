@@ -45,11 +45,13 @@ sim_eQTL_network <- function (par_list, randomizeBeta = TRUE, corNoise = FALSE) 
   # Initializing loop
   X <- matrix(numeric(dx * n), nrow = n); Y <- matrix(numeric(dy * n), nrow = n)
   Xindx <- 1; Yindx <- 1
+  bms <- rep(list(NULL), b)
   for (i in 1:b) {
     
     # Making indices
     Xindxs <- Xindx:(Xindx + Xsizes[i] - 1)
     Yindxs <- Yindx:(Yindx + Ysizes[i] - 1)
+    bms[[i]] <- c(Xindxs, dx + Yindxs)
     MindxX <- 1:Xsizes[i]
     MindxY <- (Xsizes[i] + 1):(Xsizes[i] + Ysizes[i])
     
@@ -116,7 +118,7 @@ sim_eQTL_network <- function (par_list, randomizeBeta = TRUE, corNoise = FALSE) 
   X[ , Xindx:dx] <- Xnoise
   Y[ , Yindx:dy] <- Ynoise
   
-  return(list("X" = X, "Y" = Y))
+  return(list("X" = X, "Y" = Y, "bms" = bms))
   
 }
 
@@ -139,7 +141,7 @@ make_param_list <- function (n = 500,
               "p" = 1,
               "rho" = rho,
               "s2" = s2,
-              "bgb" = 10))
+              "bgb" = bgb))
 }
     
     

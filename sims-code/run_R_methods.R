@@ -28,10 +28,11 @@ for (exper in run_expers) {
       
       curr_dir_p_rep <- file.path(curr_dir_p, rep)
       load(file.path(curr_dir_p_rep, "sim.RData"))
-      results <- bmd(sim$X, sim$Y, updateOutput = FALSE, OL_tol = 100, time_limit = 600)
+      results <- bmd(sim$X, sim$Y, updateOutput = FALSE, OL_tol = 100, Dud_tol = 50)
       save(results, file = file.path(curr_dir_p_rep, "bmd.RData"))
         
-      
+      rm(sim, results)
+      gc()
       
     }
     

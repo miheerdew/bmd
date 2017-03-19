@@ -75,11 +75,10 @@ for (exper in run_expers) {
         )))
       }
       
-      sim <- sim_eQTL_network(par_list_p)
-        
-      gc()
-        
+      sim <- sim_eQTL_network(par_list_p, corNoise = TRUE)
       save(sim, file = sim_fn)
+      rm(sim)
+      gc()
         
     } 
     
