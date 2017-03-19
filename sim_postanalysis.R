@@ -402,20 +402,20 @@ sim_postanalysis <- function (results, X, Y, run_name, run_dir,
   dY <- ncol(Y)
   
   # Preparing component list for scoring
-  component_list2 <- list(component_list,
-                          setdiff(1:(dX + dY), unlist(component_list)))
+  bg_list <- setdiff(1:(dX + dY), unlist(component_list))
+                          
   
   # Preparing BMD results for scoring
+  results_bg <- c(results$background$X_bg, results$background$Y_bg)
   results_comms <- lapply(seq_along(results$communities[[1]]), 
                              function (c) {
                                c(results$communities$X_sets[[c]],
                                  results$communities$Y_sets[[c]])
                              }
   )
-  results2 <- c(list(results_comms), 
-                   list(c(results$background$X_bg,
-                          results$background$Y_bg)))
-  BMD_bestmatch <- best_match_bimodule(component_list2, results2)
+  
+  BMD_bestmatch <- best_match_bimodule(component_list, results_comms, 
+                                       bg_list, results_bg)
   
   return(BMD_bestmatch)
 
