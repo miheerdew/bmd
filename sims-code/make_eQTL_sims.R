@@ -2,7 +2,7 @@ source("sim_eQTL_network.R")
 
 total_expers <- readLines("sims-results/exper-names.txt")
 
-run_expers <- seq_along(total_expers)
+run_expers <- c(8:10)
 
 redrawSeeds <- FALSE
 
@@ -75,7 +75,7 @@ for (exper in run_expers) {
         )))
       }
       
-      sim <- sim_eQTL_network(par_list_p, corNoise = TRUE)
+      sim <- sim_eQTL_network(par_list_p)
       save(sim, file = sim_fn)
       rm(sim)
       gc()

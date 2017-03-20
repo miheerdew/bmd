@@ -6,11 +6,33 @@ ggcor <- function (cormat, fn = NULL, removeLowerTri = FALSE,
   
   diag(cormat) <- 0
   
+  # Shrinking the matrix if necessary
+  if (nrow(cormat) == ncol(cormat) && nrow(cormat) > 1000) {
+    cat("filling smaller cormat...\n")
+    blocksize <- ceiling(nrow(cormat) / 1000)
+    newcormat <- matrix(0, 1000, 1000)
+    mposi <- 1
+    for (i in 1:1000) {
+      if (mposi > nrow(cormat)) break
+      if (i %% 100 == 0)
+        cat("i =", i, "/ 1000\n")
+      mposj <- 1
+      for (j in 1:1000) {
+        if (mposj > nrow(cormat)) break
+        indxi <- mposi:min(nrow(cormat), (mposi + blocksize - 1))
+        indxj <- mposj:min(nrow(cormat), (mposj + blocksize - 1))
+        newcormat[i, j] <- mean(cormat[indxi, indxj])
+        mposj <- mposj + blocksize
+      }
+      mposi <- mposi + blocksize
+    }
+  }
+  
   if (removeLowerTri)
-    cormat[lower.tri(cormat)] <- NA
+    newcormat[lower.tri(cormat)] <- NA
   
   # Melt the correlation matrix
-  melted_cormat <- melt(cormat, na.rm = TRUE)
+  melted_cormat <- melt(newcormat, na.rm = TRUE)
   melted_cormat$Var1 <- max(melted_cormat$Var1) - melted_cormat$Var1 + 1
   
   if (fisher) {
@@ -38,7 +60,7 @@ ggcor <- function (cormat, fn = NULL, removeLowerTri = FALSE,
     
   }
   
-  p <-ggplot(data = melted_cormat, aes(x = Var2, y = Var1, fill = value)) + 
+  p <- ggplot(data = melted_cormat, aes(x = Var2, y = Var1, fill = value)) + 
     geom_tile() + colorscale + ggtitle(title)
   if (!is.null(fn)) {
     png(fn)

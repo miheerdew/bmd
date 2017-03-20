@@ -10,7 +10,7 @@ par_seq  <- round(100 * (1:par_divs / (par_divs + 1)))
 par_dirs <- as.character(par_seq)
 
 # Give the names of your experiments: must be manually entered.
-total_expers <- as.character(1:7)
+total_expers <- as.character(1:10)
 
 if (!dir.exists("sims-results/sbm-par-lists"))
   dir.create("sims-results/sbm-par-lists", recursive = TRUE)
@@ -61,7 +61,7 @@ save(par_list,
 
 # Experiment 3 -----------------------------------------------------------------
 
-main_text <- "Increase amount of background"
+main_text <- "Increase amount of bg"
 par_list <- make_param_list()
 pars <- c("bgmult")
 xlab <- "#BG vars/#BM vars"
@@ -164,6 +164,68 @@ save(par_list,
      par_dirs,
      file = "sims-results/sbm-par-lists/experiment7.RData")
 
+# Experiment 8 -----------------------------------------------------------------
+
+main_text <- "Increase amount of bg, w/corNoiseX"
+par_list <- make_param_list(corNoiseX = TRUE)
+pars <- c("bgmult")
+xlab <- "#BG vars/#BM vars"
+axis_par <- 1
+par_settings <- matrix(0, 1, par_divs)
+par_settings[1, ] <- 10 * (par_seq_dec)
+
+save(par_list,
+     main_text,
+     axis_par,
+     pars,
+     xlab,
+     par_settings,
+     par_seq,
+     par_divs,
+     par_dirs,
+     file = "sims-results/sbm-par-lists/experiment8.RData")
+
+# Experiment 9 -----------------------------------------------------------------
+
+main_text <- "Increase amount of bg, w/corNoiseY"
+par_list <- make_param_list(corNoiseY = TRUE)
+pars <- c("bgmult")
+xlab <- "#BG vars/#BM vars"
+axis_par <- 1
+par_settings <- matrix(0, 1, par_divs)
+par_settings[1, ] <- 10 * (par_seq_dec)
+
+save(par_list,
+     main_text,
+     axis_par,
+     pars,
+     xlab,
+     par_settings,
+     par_seq,
+     par_divs,
+     par_dirs,
+     file = "sims-results/sbm-par-lists/experiment9.RData")
+
+# Experiment 10 -----------------------------------------------------------------
+
+main_text <- "Increase #bg w/corNoiseX&Y"
+par_list <- make_param_list(corNoiseX = TRUE, corNoiseY = TRUE)
+pars <- c("bgmult")
+xlab <- "#BG vars/#BM vars"
+axis_par <- 1
+par_settings <- matrix(0, 1, par_divs)
+par_settings[1, ] <- 10 * (par_seq_dec)
+
+save(par_list,
+     main_text,
+     axis_par,
+     pars,
+     xlab,
+     par_settings,
+     par_seq,
+     par_divs,
+     par_dirs,
+     file = "sims-results/sbm-par-lists/experiment10.RData")
 
 
 writeLines(total_expers, "sims-results/exper-names.txt")

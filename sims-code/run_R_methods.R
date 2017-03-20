@@ -1,7 +1,7 @@
 source("sim_eQTL_network.R")
 source("bmd.R")
 total_expers <- readLines("sims-results/exper-names.txt")
-run_expers <- seq_along(total_expers)
+run_expers <- c(10)
 
 # This should consistent throughout the experiments
 # (and match the same variable in sims/lfr/make_lfr_sims.R)

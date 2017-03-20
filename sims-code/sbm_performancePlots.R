@@ -18,12 +18,12 @@ plot_names <- c("BMD")
 pchs <- c(14, 8, 3, 22, 24, 21)
 
 # Re-get results?
-getResults <- TRUE
+getResults <- FALSE
 
 # Plot main text?
 main_text_plot <- TRUE
 
-plot_expers <- c(1:length(total_expers))
+plot_expers <- c(3, 8:10)
 
 # This should consistent throughout the experiments
 nreps <- 20
@@ -31,12 +31,6 @@ nreps <- 20
 # Brewing colors
 colPal <- brewer.pal(9, "Set1")
 
-# Storage for comb plots
-combPlot1 <- rep(list(NULL), length(total_expers))
-names(combPlot1) <- paste0("experiment", total_expers)
-allscores <- array(0, dim = c(par_divs, nreps, 4))
-methscores <- rep(list(allscores), length(methNames))
-names(methscores) <- methNames
 
 for (exper in plot_expers) {
   
@@ -48,6 +42,10 @@ for (exper in plot_expers) {
   # Getting par values
   if (exists("axis_par_string")) {rm("axis_par_string")}
   load(file.path("sims-results/sbm-par-lists", paste0(expString, ".RData")))
+  
+  allscores <- array(0, dim = c(par_divs, nreps, 4))
+  methscores <- rep(list(allscores), length(methNames))
+  names(methscores) <- methNames
   
   if (getResults) {
     
@@ -140,11 +138,11 @@ for (exper in plot_expers) {
   source("makePerformancePlot.R")
   
   # Some plot defaults
-  cex.main <- 4
-  cex.lab <- 3.5
-  cex.axis <- 3.5
+  cex.main <- 2.5
+  cex.lab <- 2.5
+  cex.axis <- 2.5
   cex <- 3.5
-  legCex <- 3
+  legCex <- 2.5
   lwd <- 3
   dotnmi <- FALSE
   

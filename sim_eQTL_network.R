@@ -9,10 +9,11 @@
 # rho = intracorrelations of X variables
 # p = average edge density of bimodules
 # s2 = noise variance scaling
+# bgb = number of background blocks to make
 
 source("mvrnormR.R")
 
-sim_eQTL_network <- function (par_list, randomizeBeta = TRUE, corNoise = FALSE) {
+sim_eQTL_network <- function (par_list, randomizeBeta = TRUE) {
   
   
   n = par_list$n
@@ -25,6 +26,8 @@ sim_eQTL_network <- function (par_list, randomizeBeta = TRUE, corNoise = FALSE) 
   rho = par_list$rho
   s2 = par_list$s2
   bgb = par_list$bgb
+  corNoiseX = par_list$corNoiseX
+  corNoiseY = par_list$corNoiseY
   
   avgsize <- cmin + (cmax - cmin) / 2
   
@@ -39,7 +42,13 @@ sim_eQTL_network <- function (par_list, randomizeBeta = TRUE, corNoise = FALSE) 
   } else {
     Xsizes <- Ysizes <- rep(cmin, b)
   }
+  
+  # Getting number of background blocks
   dbg <- round(bgmult * b * avgsize)
+  if (is.null(bgb)) {
+    bgb <- round(dbg / avgsize)
+    bgb <- max(bgb, 2)
+  }
   dx <- sum(Xsizes) + dbg; dy <- sum(Ysizes) + dbg
   
   # Initializing loop
@@ -74,47 +83,40 @@ sim_eQTL_network <- function (par_list, randomizeBeta = TRUE, corNoise = FALSE) 
         
   }
   
-  # Making background block
-  if (corNoise) {
-    
-    # Getting X background indexs
-    breakpoints <- sort(sample(1:dbg, bgb - 1, replace = FALSE))
-    Xbgindxs <- lapply(2:(bgb - 1), 
-                    function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
-    Xbgindxs <- c(list(1:breakpoints[1]), 
-                  Xbgindxs, 
-                  list(breakpoints[bgb - 1]:dbg))
-    
-    # Getting Y background indexs
-    breakpoints <- sort(sample(1:dbg, bgb - 1, replace = FALSE))
-    Ybgindxs <- lapply(2:(bgb - 1), 
-                       function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
-    Ybgindxs <- c(list(1:breakpoints[1]), 
-                  Ybgindxs, 
-                  list(breakpoints[bgb - 1]:dbg))
-    
-    # Getting intracorrs
-    Xrhos <- runif(bgb, 0, 0.5)
-    Yrhos <- runif(bgb, 0, 0.5)
-    
-    Xnoise <- Ynoise <- matrix(0, ncol = dbg, nrow = n)
-    for (j in 1:bgb) {
-      Xbgbj <- length(Xbgindxs[[j]]); Ybgbj <- length(Ybgindxs[[j]])
-      SigXj <- matrix(rep(Xrhos[j], Xbgbj^2), ncol = Xbgbj) + 
-        diag(Xbgbj) * (1 - Xrhos[j])
-      SigYj <- matrix(rep(Yrhos[j], Ybgbj^2), ncol = Ybgbj) +
-        diag(Ybgbj) * (1 - Yrhos[j])
-      Xnoise[ , Xbgindxs[[j]]] <- mvrnormR(n, rep(0, Xbgbj), SigXj)
-      Ynoise[ , Ybgindxs[[j]]] <- mvrnormR(n, rep(0, Ybgbj), SigYj)
-    }
-    
-  } else {
-    xVars <- apply(X[ , 1:(Xindx - 1)], 2, var)
-    yVars <- apply(Y[ , 1:(Yindx - 1)], 2, var)
-    Xnoise <- matrix(rnorm(n * dbg, sd = sqrt(mean(xVars))), ncol = dbg)
-    Ynoise <- matrix(rnorm(n * dbg, sd = sqrt(mean(yVars))), ncol = dbg)
-  }
+  # Making background blocks----------------------------------------------------
+  # Getting X background indexs
+  breakpoints <- sort(sample(1:dbg, bgb - 1, replace = FALSE))
+  Xbgindxs <- lapply(2:(bgb - 1), 
+                     function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
+  Xbgindxs <- c(list(1:breakpoints[1]), 
+                Xbgindxs, 
+                list(breakpoints[bgb - 1]:dbg))
   
+  # Getting Y background indexs
+  breakpoints <- sort(sample(1:dbg, bgb - 1, replace = FALSE))
+  Ybgindxs <- lapply(2:(bgb - 1), 
+                     function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
+  Ybgindxs <- c(list(1:breakpoints[1]), 
+                Ybgindxs, 
+                list(breakpoints[bgb - 1]:dbg))
+  
+  # Getting intracorrs
+  Xrhos <- runif(bgb, 0, 0.5)
+  Yrhos <- runif(bgb, 0, 0.5)
+  if (!corNoiseX) Xrhos <- rep(0, bgb)
+  if (!corNoiseY) Yrhos <- rep(0, bgb)
+  
+  Xnoise <- Ynoise <- matrix(0, ncol = dbg, nrow = n)
+  for (j in 1:bgb) {
+    Xbgbj <- length(Xbgindxs[[j]]); Ybgbj <- length(Ybgindxs[[j]])
+    SigXj <- matrix(rep(Xrhos[j], Xbgbj^2), ncol = Xbgbj) + 
+      diag(Xbgbj) * (1 - Xrhos[j])
+    SigYj <- matrix(rep(Yrhos[j], Ybgbj^2), ncol = Ybgbj) +
+      diag(Ybgbj) * (1 - Yrhos[j])
+    Xnoise[ , Xbgindxs[[j]]] <- mvrnormR(n, rep(0, Xbgbj), SigXj)
+    Ynoise[ , Ybgindxs[[j]]] <- mvrnormR(n, rep(0, Ybgbj), SigYj)
+  }
+
   X[ , Xindx:dx] <- Xnoise
   Y[ , Yindx:dy] <- Ynoise
   
@@ -131,7 +133,9 @@ make_param_list <- function (n = 500,
                              p = 1,
                              rho = 0.5,
                              s2 = 1,
-                             bgb = 10) {
+                             bgb = NULL,
+                             corNoiseX = FALSE,
+                             corNoiseY = FALSE) {
   return(list("n" = n,
               "b" = b,
               "cmin" = cmin,
@@ -141,7 +145,9 @@ make_param_list <- function (n = 500,
               "p" = 1,
               "rho" = rho,
               "s2" = s2,
-              "bgb" = bgb))
+              "bgb" = bgb,
+              "corNoiseX" = corNoiseX,
+              "corNoiseY" = corNoiseY))
 }
     
     
