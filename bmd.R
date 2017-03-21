@@ -2,7 +2,7 @@ source("makeVars.R")
 source("stdize.R")
 bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
                  updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
-                 updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1, return_zs = TRUE,
+                 updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1,
                  bmd_index=NULL, calc_full_cor=FALSE) {
   # bmd_index : A function that maps each vertex to the index of the bimodule
   #           it contains.
@@ -22,7 +22,6 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     inv.length = TRUE
     time_limit = Inf
     add_rate = 1
-    return_zs = TRUE
     calc_full_cor=FALSE
     bmd_index=NULL
   }
@@ -87,38 +86,6 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     
   }
   
-  bhy <-
-    function(pvals, alpha = 0.05){
-      
-      # Sorted p-vals
-      sp = sort(pvals)
-      
-      # Save original order of p-vals
-      ord = order(pvals)
-      
-      # Find bhy cutoff
-      nums = 1:length(pvals)
-      cms = cumsum(1/nums)
-      
-      # Find which p-vals are less than bh cutoff
-      under = sp < (nums/(length(pvals)*cms)*alpha)
-      
-      # Return indices of significant p-vals
-      if(sum(under) == 0){
-        return(c())
-      }else{
-        cutoff = max(which(under))
-        return(ord[1:cutoff])
-      }
-    }
-  
-  cluster_thres <- function (zs) {
-    
-    clust <- Ckmeans.1d.dp(zs, 2)$cluster
-    thres <- min(zs[clust == 2])
-    return(which(zs >= thres))
-  }
-  
   bh_reject <- function (pvals, alpha, conserv = TRUE) {
     
     m <- length(pvals)
@@ -162,390 +129,8 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     }
     
   }
-
-  # Defining pval function
-  pvalFun <- function (B) {
-    
-    side2 <- min(B) > dx
-    
-    if (side2) {
-      
-      B_match <- match(B, Yindx)
-      R_mat <- crossprod(Y_scaled[ , B_match], X_scaled) / (n - 1)
-      stats <- colSums(R_mat)
-      if (length(B) > 1) {
-        EmpCov <- cor(Y[ , B_match])
-      } else {
-        EmpCov <- 1
-      }
-      varSum <- sum(EmpCov)
-      
-    } else { 
-      
-      B_match <- match(B, Xindx)
-      R_mat <- crossprod(X_scaled[ , B_match], Y_scaled) / (n - 1)
-      stats <- colSums(R_mat)
-      if (length(B) > 1) {
-        EmpCov <- cor(X[ , B_match])
-      } else {
-        EmpCov <- 1
-      }
-      varSum <- sum(EmpCov)
-      
-    }
-    
-    pvals <- pnorm(sqrt(n) * stats, sd = sqrt(varSum), lower.tail = FALSE)
-    
-    return(pvals)
-    
-  }
   
-  update1 <- function (B, B0 = NULL) {
-    
-    side2 <- min(B) > dx
-      
-    pvals <- pvalFun(B)
-    
-    if (side2) {
-      B_new <- bh_reject(pvals, alpha)
-    } else {
-      B_new <- Yindx[bh_reject(pvals, alpha)]
-    }
-    
-    return(B_new)
-    
-  }
-  
-  scoreCalcs <- function (B, A) {
-    
-    I <- length(A)
-    J <- length(B)
-    
-    if (max(A) <=  dx) {
-      RA <- sum(cor(as.matrix(X[ , A])))
-      RB <- sum(cor(as.matrix(Y[ , match(B, Yindx)])))
-      Stat <- n^(1 / 2) * sum(cor(as.matrix(X[ , A]), as.matrix(Y[ , match(B, Yindx)])))
-    } else { 
-      RA <- sum(cor(as.matrix(Y[ , match(A, Yindx)])))
-      RB <- sum(cor(as.matrix(X[ , B])))
-      Stat <- n^(1 / 2) * sum(cor(as.matrix(Y[ , match(A, Yindx)]), as.matrix(X[ , B])))
-    }
-    
-    VAB <- J * RA + I * RB - I * J
-      
-    return(c(RA, RB, VAB, Stat))
-    
-  }
-  
-  update2 <- function (B, A = NULL) {
-    
-    test_X <- min(B) > dx
-    nFixd <- length(B)
-    
-    chunkSize <- 500
-    
-    
-    if (test_X) {
-      
-      # Getting fixd matrix and calcs
-      fixdIndx <- match(B, Yindx)
-      fixdMat <- as.matrix(Y[ , fixdIndx])
-      
-      # Getting test stats and indices
-      all_stats <- n^(1 / 2) * colSums(cor(fixdMat, X))
-      nTest <- dx
-      testOrder <- order(all_stats, decreasing = TRUE)
-      
-      
-    } else {
-      
-      # Getting fixd matrix and calcs
-      fixdIndx <- match(B, Xindx)
-      fixdMat <- as.matrix(X[ , fixdIndx])
-      
-      # Getting test stats and indices
-      all_stats <- n^(1 / 2) * colSums(cor(fixdMat, Y))
-      nTest <- dy
-      testOrder <- order(all_stats, decreasing = TRUE)
-      
-    }
-    
-    nChunks <- ceiling(nTest / chunkSize)
-    c_pos <- 1
-    total_includes <- numeric(nTest)
-    total_zs <- numeric(nTest)
-    last_z <- 0
-    
-    for (c in 1:nChunks) {
-      
-      cat("........chunk", c, "\n")
-      
-      indxs <- c_pos:min(nTest, (c_pos + chunkSize - 1))
-      if (test_X) {
-        A1 <- Xindx[testOrder[indxs]]
-      } else {
-        A1 <- Yindx[testOrder[indxs]]
-      }
-      zs <- numeric(length(indxs))
-      vars <- zs
-      stats <- zs
-      
-      for (t in seq_along(A1)) {
-        
-        score_comps <- scoreCalcs(B, A1[1:t])
-        stats[t] <- score_comps[4]
-        vars[t] <- score_comps[3]
-        zs[t] <- stats[t] / sqrt(vars[t])
-        
-      }
-      
-      includes <- sign(diff(c(last_z, zs)))
-      total_includes[indxs] <- includes
-      
-      if (sum(includes) != length(includes))
-        break
-      
-      c_pos <- c_pos + chunkSize
-      last_z <- tail(zs, 1)
-      
-    }
-    
-    last_in <- min(which(total_includes == -1)) - 1
-    
-    if (test_X) {
-      Anew <- Xindx[testOrder[1:last_in]]
-    } else {
-      Anew <- Yindx[testOrder[1:last_in]]
-    }
-    
-    return(Anew)
-    
-  }
-  
-  update2fast <- function(B, A = NULL, final = FALSE, num_new = 0) {
-    
-    test_X <- min(B) > dx
-    J <- length(B)
-    
-    chunkSize <- 60
-    
-    
-    if (test_X) {
-      
-      # Getting fixd matrix and calcs
-      fixdIndx <- match(B, Yindx)
-      fixdMat <- as.matrix(Y[ , fixdIndx])
-      
-      # Getting test stats and indices
-      all_stats <- n^(1 / 2) * rowSums(cross_cor(Y_indx=fixdIndx))
-      nTest <- dx
-      testOrder <- order(all_stats, decreasing = TRUE)
-      
-      
-    } else {
-      
-      # Getting fixd matrix and calcs
-      fixdIndx <- match(B, Xindx)
-      fixdMat <- as.matrix(X[ , fixdIndx])
-      
-      # Getting test stats and indices
-      all_stats <- n^(1 / 2) * colSums(cross_cor(X_indx=fixdIndx))
-      nTest <- dy
-      testOrder <- order(all_stats, decreasing = TRUE)
-      
-    }
-    
-    # Fixed quantities
-    nChunks <- ceiling(nTest / chunkSize)
-    c_break <- nChunks
-    total_includes <- logical(nTest)
-    total_zs <- numeric(nTest)
-    RB <- sum(cor(fixdMat))
-    
-    # Rolling quantities
-    c_pos <- 1
-    lastV <- 0
-    Rhat_A0_B <- 0
-    RA0 <- 0
-    A0 <- integer(0)
-    do_more <- FALSE
-    
-    for (c in 1:nChunks) {
-      
-      cat("........chunk", c, "\n")
-
-      indxs <- c_pos:min(nTest, c_pos + chunkSize - 1)
-      
-      A1 <- testOrder[indxs]
-      K1 <- length(A1)
-      K0 <- length(A0)
-      
-      R_k_A0 <- 0
-      
-      if (test_X) {
-        if (K0 > 0) {
-          R_k_A0 <- rowSums(cor(X[ , A1], X[ , A0]))
-        }
-        Rhat_k_B <- rowSums(cross_cor(A1, fixdIndx))
-        RA1 <- cor(X[ , A1])
-      } else {
-        if (K0 > 0) {
-          R_k_A0 <- rowSums(cor(Y[ , A1], Y[ , A0]))
-        }
-        Rhat_k_B <- colSums(cross_cor(fixdIndx, A1))
-        RA1 <- cor(Y[ , A1])
-      }
-      
-      RA1[lower.tri(RA1)] <- 0; diag(RA1) <- 0
-      R_k_A1_back <- colSums(RA1)
-      A01_vars <- 2 * (R_k_A0 + R_k_A1_back) + 1
-      RA0k <- RA0 + cumsum(A01_vars)
-      V_A0k_B <- J * RA0k + indxs * RB - indxs * J
-      Rhat_A0k_B <- Rhat_A0_B + cumsum(Rhat_k_B)
-      
-      Vratios <- V_A0k_B / c(lastV, V_A0k_B[-K1])
-      Rsums <- c(Rhat_A0_B, Rhat_A0k_B[-K1])
-      
-      zs <- (Rhat_k_B + Rsums) / sqrt(V_A0k_B)
-      total_zs[indxs] <- zs
-      if (c == c_break)
-        break
-      
-      if (!do_more) {
-        includes <- Rhat_k_B > Rsums * (sqrt(Vratios) - 1)
-        if (c == 1) {
-          includes[1] <- TRUE
-        }
-        total_includes[indxs] <- includes
-      }
-      
-      if (!do_more && sum(includes) != length(includes)) {
-        if (!final) {
-          break
-        } else {
-          do_more <- TRUE
-          final_spot <- min(which(includes == FALSE)) - 1
-          left_in_chunk <- chunkSize - final_spot
-          needed <- num_new - left_in_chunk
-          if (needed <= 0) {
-            break
-          } else {
-            if (needed + c_pos + chunkSize - 1 > nTest)
-              needed <- nTest - c_pos - chunkSize + 1
-            chunks_needed <- ceiling(needed / chunkSize)
-            c_break <- c + chunks_needed
-          }
-        }
-      }
-        
-      
-      c_pos <- c_pos + chunkSize
-      lastV <- V_A0k_B[K1]
-      Rhat_A0_B <- Rhat_A0k_B[K1]
-      RA0 <- RA0k[K1]
-      A0 <- c(A0, A1)
-      
-    }
-    
-    last_in <- min(which(total_includes == FALSE)) - 1
-    if (final)
-      last_in2 <- min(min(which(total_zs == 0)) - 1, 1)
-      
-    if (test_X) {
-      Anew <- Xindx[testOrder[1:last_in]]
-      if (final)
-        Anew2 <- Xindx[testOrder[1:last_in2]]
-    } else {
-      Anew <- Yindx[testOrder[1:last_in]]
-      if (final)
-        Anew2 <- Yindx[testOrder[1:last_in2]]
-    }
-    
-    if (final) {
-      return(list("updated" = Anew,
-                  "updated2" = Anew2,
-                  "zs" = total_zs[1:length(Anew2)]))
-    } else {
-      return(Anew)
-    }
-    
-  }
-  
-  update4 <- function (B, A) {
-    
-    test_X <- max(A) <= dx
-    nTest <- length(A)
-    nFixd <- length(B)
-    
-    if (nFixd == 0)
-      return(integer(0))
-    
-    if (test_X) {
-      
-      # Getting indices
-      testIndx <- match(A, Xindx)
-      fixdIndx <- match(B, Yindx)
-      set_ind <- Xindx %in% A
-      
-      # Getting matrices
-      testMat <- as.matrix(X[ , testIndx])
-      fixdMat <- as.matrix(Y[ , fixdIndx])
-      
-    } else {
-      
-      # Getting indices
-      testIndx <- match(A, Yindx)
-      fixdIndx <- match(B, Xindx)
-      set_ind <- Yindx %in% A
-      
-      # Getting matrices
-      testMat <- as.matrix(Y[ , testIndx])
-      fixdMat <- as.matrix(X[ , fixdIndx])
-      
-    }
-    
-    # Getting variance sums
-    RB <- sum(cor(fixdMat))
-    RA <- sum(cor(testMat))
-    
-    # Getting big sum
-    Rhat_A_B <- n^(1 / 2) * sum(cor(fixdMat, testMat))
-    Rhat_A_B_i <- Rhat_A_B - set_ind
-    
-    # Getting all sum stats and var means
-    if (test_X) {
-      Rhat_i_B <- n^(1 / 2) * colSums(cor(fixdMat, X))
-      R_i_A <- colSums(cor(testMat, X)) - set_ind
-    } else {
-      Rhat_i_B <- n^(1 / 2) * colSums(cor(fixdMat, Y))
-      R_i_A <- colSums(cor(testMat, Y)) - set_ind
-    }
-    RA_i <- RA - set_ind * (2 * R_i_A + 1)
-    
-    Fi <- 1 + (nFixd * (2 * R_i_A) + RB) / (nFixd * RA_i + (nTest - set_ind) * (RB - nFixd))
-    successes <- Rhat_i_B >= Rhat_A_B_i * (sqrt(Fi) - 1)
-    score_ratios <- Rhat_i_B / (Rhat_A_B_i * (sqrt(Fi) - 1))
-    
-    
-    # Return indices
-    
-    if (test_X) {
-      Anew <- Xindx[successes]
-      testIndx <- Xindx[testIndx]
-    } else {
-      Anew <- Yindx[successes]
-      testIndx <- Yindx[testIndx]
-    }
-    
-    if (length(testIndx) == 1 && length(Anew) > 0)
-      Anew <- c(testIndx, Anew)
-    
-    return(Anew)
-    
-  }
-  
-  update5 <- function (B, A = NULL, bhy = FALSE,
-                       clusterThres = FALSE) {
+  update5 <- function (B, A = NULL, justpvals = FALSE) {
     
     if (length(B) == 0)
       return(integer(0))
@@ -628,66 +213,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     zstats <- sqrt(n) * corsums / sqrt(allvars)
     pvals <- pnorm(zstats, lower.tail = FALSE)
     
-    if (bhy) {
-      successes <- bhy(pvals, alpha)
-    } else {
-      successes <- bh_reject(pvals, alpha)
-    }
+    if (justpvals)
+      return(pvals)
     
-    if (clusterThres) {
-      successes2 <- cluster_thres(zstats)
-      if (length(successes) > length(successes2))
-        successes <- successes2
-    }
-    
-    # Return indices
-    
-    if (test_X) {
-      Anew <- Xindx[successes]
-    } else {
-      Anew <- Yindx[successes]
-    }
-    
-    return(Anew)
-    
-  }
-  
-  update6 <- function (B, A = NULL) {
-    
-    if (length(B) == 0)
-      return(integer(0))
-    
-    test_X <- min(B) > dx
-    nFixd <- length(B)
-    
-    if (test_X) {
-      
-      # Getting fixed matrix
-      fixdIndx <- match(B, Yindx)
-      fixdMat <- as.matrix(Y[ , fixdIndx])
-      Uis <- X
-      cormeans <- as.vector(rowMeans(cross_cor(Y_indx = fixdIndx)))
-      
-    } else {
-      
-      # Getting fixed matrix
-      fixdIndx <- match(B, Xindx)
-      fixdMat <- as.matrix(X[ , fixdIndx])
-      Uis <- Y
-      cormeans <- as.vector(colMeans(cross_cor(X_indx=fixdIndx)))
-      
-    }
-    
-    Uis <- stdize(t(Uis))
-    M_A <- stdize(t(fixdMat))
-    
-    
-    
-    allvars <- makeVars(Uis, M_A)
-    zstats <- cormeans / sqrt(allvars)
-    pvals <- pnorm(zstats, lower.tail = FALSE)
-    successes <- bhy(pvals, alpha)
-    
+    successes <- bh_reject(pvals, alpha)
     
     # Return indices
     
@@ -706,13 +235,13 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       cor_to_u <- cross_cor(X_indx=u)
       fischer_tranformed_cor <- atanh(cor_to_u)*sqrt(n-3)
       pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
-      successes <- Yindx[bhy(pvals, alpha)]
+      successes <- Yindx[bh_reject(pvals, alpha)]
     } else {
       if (u > dx) {
         cor_to_u <- cross_cor(Y_indx=u-dx)
         fischer_tranformed_cor <- atanh(cor_to_u)*sqrt(n-3)
         pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
-        successes <- Xindx[bhy(pvals, alpha)]
+        successes <- Xindx[bh_reject(pvals, alpha)]
       } 
     }
     return(successes)
@@ -720,34 +249,23 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
   
   initialize <- function (...) {
     
-    if (initializeMethod == 1)
-      return(update1(...))
-    
-    if (initializeMethod == 2)
-      return(update2fast(...))
-    
-    if (initializeMethod == 3)
+    if (initializeMethod == 3) {
       return(initialize3(...))
+    } else {
+      stop('only initializeMethod = 3 supported\n')
+    }
     
 
   }
   
   update <- function (...) {
     
-    if (updateMethod == 1)
-      return(update1(...))
-    
-    if (updateMethod == 2)
-      return(update2fast(...))
-    
-    if (updateMethod == 4)
-      return(update4(...))
-    
     if (updateMethod == 5)
       return(update5(...))
     
-    if (updateMethod == 6)
-      return(update6(...))
+    if (!updateMethod %in% c(5, 7)) {
+      stop('only updateMethod = 5 or 7 supported\n')
+    }
       
   }
   
@@ -877,20 +395,27 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       
       itCount <- itCount + 1
       
-      #if (itCount == 50)
-      #  break
-      
-      B_newx <- update(B_oldy, B_oldx)
-      if (length(B_newx) >= 1) {
-        B_newy <- update(B_newx, B_oldy)
+      if (updateMethod != 7) {
+        B_newx <- update(B_oldy, B_oldx)
+        if (length(B_newx) >= 1) {
+          B_newy <- update(B_newx, B_oldy)
+        } else {
+          B_newy <- integer(0)
+          break
+        }
+        B_new <- c(B_newx, B_newy)
+        
+        if (length(B_newy) == 0)
+          break
       } else {
-        B_newy <- integer(0)
-        break
+        
+        Xpvals <- update5(B_oldy, justpvals = TRUE)
+        Ypvals <- update5(B_oldx, justpvals = TRUE)
+        B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
+        B_newx <- B_new[B_new <= dx]
+        B_newy <- B_new[B_new > dx]
+        
       }
-      B_new <- c(B_newx, B_newy)
-      
-      if (length(B_newy) == 0)
-        break
       
       consec_jaccard <- jaccard(B_new, B_old)
       jaccards <- unlist(lapply(chain, function (B) jaccard(B, B_new)))
@@ -1053,36 +578,11 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
   X_bg <- setdiff(Xindx, unlist(X_sets))
   Y_bg <- setdiff(Yindx, unlist(Y_sets))
   final_ncomms <- length(X_sets)
-  X_zs <- rep(list(NULL), final_ncomms)
-  Y_zs <- rep(list(NULL), final_ncomms)
-  
-  if (return_zs) {
-    
-    for (c in 1:final_ncomms) {
-      
-      cat("Calculating final zs for comm", c, "\n")
-      
-      XL <- length(X_sets[[c]])
-      YL <- length(Y_sets[[c]])
-      num_newX <- max(5, ceiling(add_rate * XL))
-      num_newY <- max(5, ceiling(add_rate * YL))
-      updateObjX <- update2fast(Y_sets[[c]], final = TRUE, num_new = num_newX)
-      updateObjY <- update2fast(X_sets[[c]], final = TRUE, num_new = num_newX)
-      X_zs[[c]] <- updateObjX[2:3]
-      Y_zs[[c]] <- updateObjY[2:3]
-      
-    }
-  }
-      
-  
-  
   
   returnList <- list("communities" = list("X_sets" = X_sets,
                                           "Y_sets" = Y_sets),
                      "background" = list("X_bg" = X_bg,
                                          "Y_bg" = Y_bg),
-                     "commzs" = list("X_zs" = X_zs,
-                                     "Y_zs" = Y_zs),
                      "initial.sets" = initial.sets, 
                      "final.sets" = final.sets,
                      "nits" = nits,

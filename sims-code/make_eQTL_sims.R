@@ -2,7 +2,7 @@ source("sim_eQTL_network.R")
 
 total_expers <- readLines("sims-results/exper-names.txt")
 
-run_expers <- c(8:10)
+run_expers <- c(3, 8:10)
 
 redrawSeeds <- FALSE
 

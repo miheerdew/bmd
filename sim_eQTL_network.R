@@ -28,6 +28,7 @@ sim_eQTL_network <- function (par_list, randomizeBeta = TRUE) {
   bgb = par_list$bgb
   corNoiseX = par_list$corNoiseX
   corNoiseY = par_list$corNoiseY
+  maxNoiseCor = par_list$maxNoiseCor
   
   avgsize <- cmin + (cmax - cmin) / 2
   
@@ -83,71 +84,77 @@ sim_eQTL_network <- function (par_list, randomizeBeta = TRUE) {
         
   }
   
-  # Making background blocks----------------------------------------------------
-  # Getting X background indexs
-  breakpoints <- sort(sample(1:dbg, bgb - 1, replace = FALSE))
-  Xbgindxs <- lapply(2:(bgb - 1), 
-                     function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
-  Xbgindxs <- c(list(1:breakpoints[1]), 
-                Xbgindxs, 
-                list(breakpoints[bgb - 1]:dbg))
+  if (dbg > 0) {
+    
+    # Making background blocks----------------------------------------------------
+    # Getting X background indexs
+    breakpoints <- sort(sample(1:dbg, bgb - 1, replace = FALSE))
+    Xbgindxs <- lapply(2:(bgb - 1), 
+                       function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
+    Xbgindxs <- c(list(1:breakpoints[1]), 
+                  Xbgindxs, 
+                  list(breakpoints[bgb - 1]:dbg))
+    
+    # Getting Y background indexs
+    breakpoints <- sort(sample(1:dbg, bgb - 1, replace = FALSE))
+    Ybgindxs <- lapply(2:(bgb - 1), 
+                       function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
+    Ybgindxs <- c(list(1:breakpoints[1]), 
+                  Ybgindxs, 
+                  list(breakpoints[bgb - 1]:dbg))
+    
+    # Getting intracorrs
+    Xrhos <- runif(bgb, 0, maxNoiseCor)
+    Yrhos <- runif(bgb, 0, maxNoiseCor)
+    if (!corNoiseX) Xrhos <- rep(0, bgb)
+    if (!corNoiseY) Yrhos <- rep(0, bgb)
+    
+    Xnoise <- Ynoise <- matrix(0, ncol = dbg, nrow = n)
+    for (j in 1:bgb) {
+      Xbgbj <- length(Xbgindxs[[j]]); Ybgbj <- length(Ybgindxs[[j]])
+      SigXj <- matrix(rep(Xrhos[j], Xbgbj^2), ncol = Xbgbj) + 
+        diag(Xbgbj) * (1 - Xrhos[j])
+      SigYj <- matrix(rep(Yrhos[j], Ybgbj^2), ncol = Ybgbj) +
+        diag(Ybgbj) * (1 - Yrhos[j])
+      Xnoise[ , Xbgindxs[[j]]] <- mvrnormR(n, rep(0, Xbgbj), SigXj)
+      Ynoise[ , Ybgindxs[[j]]] <- mvrnormR(n, rep(0, Ybgbj), SigYj)
+    }
   
-  # Getting Y background indexs
-  breakpoints <- sort(sample(1:dbg, bgb - 1, replace = FALSE))
-  Ybgindxs <- lapply(2:(bgb - 1), 
-                     function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
-  Ybgindxs <- c(list(1:breakpoints[1]), 
-                Ybgindxs, 
-                list(breakpoints[bgb - 1]:dbg))
-  
-  # Getting intracorrs
-  Xrhos <- runif(bgb, 0, 0.5)
-  Yrhos <- runif(bgb, 0, 0.5)
-  if (!corNoiseX) Xrhos <- rep(0, bgb)
-  if (!corNoiseY) Yrhos <- rep(0, bgb)
-  
-  Xnoise <- Ynoise <- matrix(0, ncol = dbg, nrow = n)
-  for (j in 1:bgb) {
-    Xbgbj <- length(Xbgindxs[[j]]); Ybgbj <- length(Ybgindxs[[j]])
-    SigXj <- matrix(rep(Xrhos[j], Xbgbj^2), ncol = Xbgbj) + 
-      diag(Xbgbj) * (1 - Xrhos[j])
-    SigYj <- matrix(rep(Yrhos[j], Ybgbj^2), ncol = Ybgbj) +
-      diag(Ybgbj) * (1 - Yrhos[j])
-    Xnoise[ , Xbgindxs[[j]]] <- mvrnormR(n, rep(0, Xbgbj), SigXj)
-    Ynoise[ , Ybgindxs[[j]]] <- mvrnormR(n, rep(0, Ybgbj), SigYj)
+    X[ , Xindx:dx] <- Xnoise
+    Y[ , Yindx:dy] <- Ynoise
+    
   }
-
-  X[ , Xindx:dx] <- Xnoise
-  Y[ , Yindx:dy] <- Ynoise
   
   return(list("X" = X, "Y" = Y, "bms" = bms))
   
 }
 
-make_param_list <- function (n = 500,
+make_param_list <- function (n = 200,
                              b = 10,
-                             cmin = 100,
+                             cmin = 50,
                              cmax = 100,
                              bgmult = 1,
                              betamean = 1,
-                             p = 1,
-                             rho = 0.5,
-                             s2 = 1,
+                             p = 0.5,
+                             rho = 0.3,
+                             s2 = 4,
                              bgb = NULL,
                              corNoiseX = FALSE,
-                             corNoiseY = FALSE) {
+                             corNoiseY = FALSE,
+                             maxNoiseCor = rho) {
   return(list("n" = n,
               "b" = b,
               "cmin" = cmin,
               "cmax" = cmax,
               "bgmult" = bgmult,
               "betamean" = betamean,
-              "p" = 1,
+              "p" = p,
               "rho" = rho,
               "s2" = s2,
               "bgb" = bgb,
               "corNoiseX" = corNoiseX,
-              "corNoiseY" = corNoiseY))
+              "corNoiseY" = corNoiseY,
+              "maxNoiseCor" = maxNoiseCor))
 }
     
     

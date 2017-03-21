@@ -26,6 +26,8 @@ ggcor <- function (cormat, fn = NULL, removeLowerTri = FALSE,
       }
       mposi <- mposi + blocksize
     }
+  } else {
+    newcormat <- cormat
   }
   
   if (removeLowerTri)

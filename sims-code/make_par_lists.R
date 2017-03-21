@@ -23,7 +23,7 @@ pars <- c("n")
 xlab <- "Sample Size"
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- round(500 * (par_seq_dec + min(par_seq_dec) * 
+par_settings[1, ] <- round(200 * (par_seq_dec + min(par_seq_dec) * 
                                      as.numeric(shove_dec)))
 
 save(par_list,
@@ -45,7 +45,7 @@ pars <- c("cmin")
 xlab <- "Min BM-half size"
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- round(100 * (par_seq_dec + min(par_seq_dec) * 
+par_settings[1, ] <- round(50 * (par_seq_dec + min(par_seq_dec) * 
                                     as.numeric(shove_dec)))
 
 save(par_list,
@@ -67,7 +67,7 @@ pars <- c("bgmult")
 xlab <- "#BG vars/#BM vars"
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- 10 * (par_seq_dec)
+par_settings[1, ] <- c(0, 0.5, 10 * (par_seq_dec[-c(1, par_divs)]) - 1)
 
 save(par_list,
      main_text,
@@ -82,13 +82,13 @@ save(par_list,
 
 # Experiment 4 -----------------------------------------------------------------
 
-main_text <- "Increase mean of beta parameters"
+main_text <- "Decrease mean of beta parameters"
 par_list <- make_param_list()
 pars <- c("betamean")
 xlab <- "Mean of beta params"
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- 10 * (par_seq_dec + min(par_seq_dec) * as.numeric(shove_dec))
+par_settings[1, ] <- 1 * (par_seq_dec + min(par_seq_dec) * as.numeric(shove_dec))
 
 save(par_list,
      main_text,
@@ -103,13 +103,13 @@ save(par_list,
 
 # Experiment 5 -----------------------------------------------------------------
 
-main_text <- "Increase eQTL probability"
+main_text <- "Decrease eQTL probability"
 par_list <- make_param_list()
 pars <- c("p")
 xlab <- "eQTL probability"
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- 1 * (par_seq_dec + min(par_seq_dec) * as.numeric(shove_dec))
+par_settings[1, ] <- 0.5 * (par_seq_dec + min(par_seq_dec) * as.numeric(shove_dec))
 
 save(par_list,
      main_text,
@@ -130,7 +130,7 @@ pars <- c("rho")
 xlab <- "Intra-X corr"
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- 0.5 * (par_seq_dec + min(par_seq_dec) * as.numeric(shove_dec))
+par_settings[1, ] <- 0.3 * (par_seq_dec) - 0.03
 
 save(par_list,
      main_text,
@@ -151,7 +151,7 @@ pars <- c("s2")
 xlab <- "Noise scaling"
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- 10 * (par_seq_dec + min(par_seq_dec) * as.numeric(shove_dec))
+par_settings[1, ] <- (50 * (par_seq_dec + min(par_seq_dec) * as.numeric(shove_dec)) - 5)^2
 
 save(par_list,
      main_text,
@@ -172,7 +172,7 @@ pars <- c("bgmult")
 xlab <- "#BG vars/#BM vars"
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- 10 * (par_seq_dec)
+par_settings[1, ] <- c(0, 0.5, 10 * (par_seq_dec[-c(1, par_divs)]) - 1)
 
 save(par_list,
      main_text,
@@ -193,7 +193,7 @@ pars <- c("bgmult")
 xlab <- "#BG vars/#BM vars"
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- 10 * (par_seq_dec)
+par_settings[1, ] <- c(0, 0.5, 10 * (par_seq_dec[-c(1, par_divs)]) - 1)
 
 save(par_list,
      main_text,
@@ -214,7 +214,7 @@ pars <- c("bgmult")
 xlab <- "#BG vars/#BM vars"
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- 10 * (par_seq_dec)
+par_settings[1, ] <- c(0, 0.5, 10 * (par_seq_dec[-c(1, par_divs)]) - 1)
 
 save(par_list,
      main_text,
