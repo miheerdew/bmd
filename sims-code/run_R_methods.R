@@ -30,9 +30,9 @@ for (exper in run_expers) {
       load(file.path(curr_dir_p_rep, "sim.RData"))
       timer <- proc.time()[3]
       results <- bmd(sim$X, sim$Y, updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
-                     calc_full_cor = TRUE, updateMethod = 5)
+                     calc_full_cor = TRUE, updateMethod = 7)
       timer <- proc.time()[3] - timer
-      save(results, timer, file = file.path(curr_dir_p_rep, "bmd.RData"))
+      save(results, timer, file = file.path(curr_dir_p_rep, "bmd2.RData"))
         
       rm(sim, results)
       gc()

@@ -358,7 +358,11 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
         break
       next
     }
-    B0y <- update(B0x, comm_indx)
+    if (updateMethod == 7) {
+      B0y <- update5(B0x, comm_indx)
+    } else {
+      B0y <- update(B0x, comm_indx)
+    }
     
     # Removing B0 from remaining
     if (throwInitial) {
@@ -409,8 +413,13 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
           break
       } else {
         
-        Xpvals <- update5(B_oldy, justpvals = TRUE)
-        Ypvals <- update5(B_oldx, justpvals = TRUE)
+        if (comm_indx > dx) {
+          Xpvals <- update5(B_oldy, justpvals = TRUE)
+          Ypvals <- update5(B_oldx, justpvals = TRUE)
+        } else {
+          Xpvals <- update5(B_oldx, justpvals = TRUE)
+          Ypvals <- update5(B_oldy, justpvals = TRUE)
+        }
         B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
         B_newx <- B_new[B_new <= dx]
         B_newy <- B_new[B_new > dx]
