@@ -46,8 +46,8 @@ makePerformancePlot <-  function (fn = NULL, meanMat, sdMat = NULL,
     if (new) {
       
       meth = plot_names[j]
-      points(xvals, meanMat[meth, ], pch = pchs[j], cex = cex)
-      lines(xvals, meanMat[meth, ], lty = j + 1, lwd = lwd)
+      points(xvals, meanMat[meth, ], pch = pchs[j], cex = cex, col = colPal[j])
+      lines(xvals, meanMat[meth, ], lty = j + 1, lwd = lwd, col = colPal[j])
       if (tnmi) {
         abline(h = tonmi(0.95, tnmi_a), lwd = lwd)
         text(y = tonmi(0.95, tnmi_a), pos = 1, cex = cex.lab,
@@ -80,7 +80,7 @@ makePerformancePlot <-  function (fn = NULL, meanMat, sdMat = NULL,
     if (new) {
       
       legend(x = legPos, legend = plot_names, lty = 1 + 1:length(plot_names),
-             cex = legCex, lwd = legLwd, pch = pchs)
+             cex = legCex, lwd = legLwd, pch = pchs, col = colPal)
       
     } else {
     

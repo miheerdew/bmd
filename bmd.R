@@ -416,13 +416,21 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
         if (comm_indx > dx) {
           Xpvals <- update5(B_oldy, justpvals = TRUE)
           Ypvals <- update5(B_oldx, justpvals = TRUE)
+          B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
+          B_newx <- B_new[B_new <= dx]
+          B_newy <- B_new[B_new > dx]
         } else {
           Xpvals <- update5(B_oldx, justpvals = TRUE)
           Ypvals <- update5(B_oldy, justpvals = TRUE)
+          B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
+          B_newx <- B_new[B_new > dx]
+          B_newy <- B_new[B_new <= dx]
         }
-        B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
-        B_newx <- B_new[B_new <= dx]
-        B_newy <- B_new[B_new > dx]
+        
+        if (length(B_newy) * length(B_newx) == 0) {
+          B_newy <- B_newx <- integer(0)
+          break
+        }
         
       }
       

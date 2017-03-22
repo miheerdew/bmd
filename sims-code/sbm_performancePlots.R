@@ -8,22 +8,22 @@ source("sim_eQTL_network.R")
 source("best_match.R")
 
 # Set method names:
-methNames <- c("bmd")
+methNames <- c("bmd", "bmd2")
 
 # Set which methods to plot and their plot names
 plot_meths <- c(1)
-plot_names <- c("BMD")
+plot_names <- c("BMD", "BMD2")
 
 # Set points
 pchs <- c(14, 8, 3, 22, 24, 21)
 
 # Re-get results?
-getResults <- FALSE
+getResults <- TRUE
 
 # Plot main text?
 main_text_plot <- TRUE
 
-plot_expers <- c(3, 8:10)
+plot_expers <- seq_along(total_expers)
 
 # This should consistent throughout the experiments
 nreps <- 20
