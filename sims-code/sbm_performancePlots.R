@@ -11,7 +11,7 @@ source("best_match.R")
 methNames <- c("bmd", "bmd2")
 
 # Set which methods to plot and their plot names
-plot_meths <- c(1)
+plot_meths <- c(1:2)
 plot_names <- c("BMD", "BMD2")
 
 # Set points
