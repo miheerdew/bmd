@@ -1,7 +1,8 @@
 source("sim_eQTL_network.R")
 source("bmd.R")
 total_expers <- readLines("sims-results/exper-names.txt")
-run_expers <- seq_along(total_expers)
+#run_expers <- seq_along(total_expers)
+run_expers <- c(11)
 
 # This should consistent throughout the experiments
 # (and match the same variable in sims/lfr/make_lfr_sims.R)
@@ -15,12 +16,14 @@ for (exper in run_expers) {
   root_dir <- file.path("sims-results", exper_string)
   
   # Loading parameters
-  load(paste0(file.path("sims-results/sbm-par-lists", exper_string),
-              ".RData"))
+  load(paste0(file.path("sims-results/sbm-par-lists", exper_string), ".RData"))
   
   for (p in 1:par_divs) {
     
     curr_dir_p <- file.path(root_dir, par_dirs[p])
+    
+    # Setting alpha
+    alpha <- ifelse(palpha, par_settings[1, p], 0.05)
     
     for (rep in 1:nreps) {
       
@@ -28,8 +31,17 @@ for (exper in run_expers) {
     
       curr_dir_p_rep <- file.path(curr_dir_p, rep)
       load(file.path(curr_dir_p_rep, "sim.RData"))
+      
       timer <- proc.time()[3]
-      results <- bmd(sim$X, sim$Y, updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
+      results <- bmd(sim$X, sim$Y, alpha = alpha,
+                     updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
+                     calc_full_cor = TRUE, updateMethod = 5)
+      timer <- proc.time()[3] - timer
+      save(results, timer, file = file.path(curr_dir_p_rep, "bmd.RData"))
+      
+      timer <- proc.time()[3]
+      results <- bmd(sim$X, sim$Y, alpha = alpha,
+                     updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
                      calc_full_cor = TRUE, updateMethod = 7)
       timer <- proc.time()[3] - timer
       save(results, timer, file = file.path(curr_dir_p_rep, "bmd2.RData"))

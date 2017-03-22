@@ -2,7 +2,7 @@ source("sim_eQTL_network.R")
 
 total_expers <- readLines("sims-results/exper-names.txt")
 
-run_expers <- c(3, 8:10)
+run_expers <- c(11)
 
 redrawSeeds <- FALSE
 
@@ -44,7 +44,8 @@ for (exper in run_expers) {
     for (j in 1:length(pars)) {
       par <- pars[j]
       par_indx <- which(names(par_list) == par)
-      par_list_p[[par_indx]] <- par_settings[j, p]
+      if (length(par_indx) == 1)
+        par_list_p[[par_indx]] <- par_settings[j, p]
     }
     
     

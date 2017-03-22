@@ -23,7 +23,7 @@ getResults <- TRUE
 # Plot main text?
 main_text_plot <- TRUE
 
-plot_expers <- seq_along(total_expers)
+plot_expers <- 9
 
 # This should consistent throughout the experiments
 nreps <- 20
@@ -43,7 +43,7 @@ for (exper in plot_expers) {
   if (exists("axis_par_string")) {rm("axis_par_string")}
   load(file.path("sims-results/sbm-par-lists", paste0(expString, ".RData")))
   
-  allscores <- array(0, dim = c(par_divs, nreps, 4))
+  allscores <- array(0, dim = c(par_divs, nreps, 8))
   methscores <- rep(list(allscores), length(methNames))
   names(methscores) <- methNames
   
@@ -114,6 +114,10 @@ for (exper in plot_expers) {
     BM1_means <- convertToMat(methscores, score = 2)
     BM2_means <- convertToMat(methscores, score = 3)
     BJ_means <- convertToMat(methscores, score = 4)
+    SP_means <- convertToMat(methscores, score = 5)
+    SM_means <- convertToMat(methscores, score = 6)
+    F1_means <- convertToMat(methscores, score = 7)
+    F2_means <- convertToMat(methscores, score = 8)
       
     BM_sds <- convertToMat(methscores, score = 1, type = "sd")
     BM1_sds <- convertToMat(methscores, score = 2, type = "sd")
@@ -124,6 +128,10 @@ for (exper in plot_expers) {
          BM1_means, BM1_sds,
          BM2_means, BM2_sds,
          BJ_means, BJ_sds,
+         SP_means,
+         SM_means,
+         F1_means,
+         F2_means,
          file = file.path(root_dir, "plot_results.RData"))
     
   } else {
@@ -186,10 +194,18 @@ for (exper in plot_expers) {
   rownames(BJ_means) <- plot_names
   rownames(BJ_sds) <- plot_names
   
+  SP_means <- SP_means[plot_meths, , drop = FALSE]
+  SM_means <- SM_means[plot_meths, , drop = FALSE]
+  F1_means <- F1_means[plot_meths, , drop = FALSE]
+  F2_means <- F2_means[plot_meths, , drop = FALSE]
+  rownames(SP_means) <- rownames(SM_means) <- rownames(F1_means) <- 
+    rownames(F2_means) <- plot_names
+  
+  
   plotfn = file.path("sims-results", paste0(expString, ".png"))
   
-  png(plotfn, width = 1000, height = 1000)
-  par(mfrow = c(2, 2), oma = rep(0, 4),
+  png(plotfn, width = 1500, height = 1500)
+  par(mfrow = c(3, 3), oma = rep(0, 4),
       mar = c(11, 11, 6, 4),
       mgp = c(6, 2, 0))
   
@@ -270,6 +286,94 @@ for (exper in plot_expers) {
                                  main = main_str,
                                  xlab = xlab_string,
                                  ylab = "Background Jaccard",
+                                 legPos = "topright",
+                                 legCex = legCex,
+                                 lwd = lwd,
+                                 cex = cex, pchs = pchs,
+                                 cex.main = cex.main,
+                                 cex.lab = cex.lab,
+                                 cex.axis = cex.axis)
+    
+  )
+  
+  # StickyProb
+  
+  suppressWarnings(
+    
+    dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
+                                 xvals = paramVec, yRange = c(0, 1),
+                                 meanMat = SP_means, tnmi = dotnmi,
+                                 sdMat = NA,
+                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
+                                 main = main_str,
+                                 xlab = xlab_string,
+                                 ylab = "StickyProb",
+                                 legPos = "topright",
+                                 legCex = legCex,
+                                 lwd = lwd,
+                                 cex = cex, pchs = pchs,
+                                 cex.main = cex.main,
+                                 cex.lab = cex.lab,
+                                 cex.axis = cex.axis)
+    
+  )
+  
+  # StickyMean
+  
+  suppressWarnings(
+    
+    dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
+                                 xvals = paramVec, yRange = c(0, 1),
+                                 meanMat = SP_means, tnmi = dotnmi,
+                                 sdMat = NA,
+                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
+                                 main = main_str,
+                                 xlab = xlab_string,
+                                 ylab = "StickyMean",
+                                 legPos = "topright",
+                                 legCex = legCex,
+                                 lwd = lwd,
+                                 cex = cex, pchs = pchs,
+                                 cex.main = cex.main,
+                                 cex.lab = cex.lab,
+                                 cex.axis = cex.axis)
+    
+  )
+  
+  # Avg FDR
+  
+  suppressWarnings(
+    
+    dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
+                                 xvals = paramVec, yRange = c(0, 1),
+                                 meanMat = SP_means, tnmi = dotnmi,
+                                 sdMat = NA,
+                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
+                                 main = main_str,
+                                 xlab = xlab_string,
+                                 ylab = "Avg FDR",
+                                 legPos = "topright",
+                                 legCex = legCex,
+                                 lwd = lwd,
+                                 cex = cex, pchs = pchs,
+                                 cex.main = cex.main,
+                                 cex.lab = cex.lab,
+                                 cex.axis = cex.axis)
+    
+  )
+  
+  # AvgWtdFDR
+  
+  suppressWarnings(
+    
+    dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
+                                 xvals = paramVec, yRange = c(0, 1),
+                                 meanMat = SP_means, tnmi = dotnmi,
+                                 sdMat = NA,
+                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
+                                 main = main_str,
+                                 xlab = xlab_string,
+                                 ylab = "AvgWtdFDR",
                                  legPos = "topright",
                                  legCex = legCex,
                                  lwd = lwd,
