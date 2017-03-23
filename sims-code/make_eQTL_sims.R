@@ -1,13 +1,13 @@
+run_expers <- sapply(commandArgs(TRUE), as.numeric)
+
 source("sim_eQTL_network.R")
 
 total_expers <- readLines("sims-results/exper-names.txt")
 
-run_expers <- c(11)
-
 redrawSeeds <- FALSE
 
 # This should consistent throughout the experiments
-nreps <- 20
+nreps <- 50
 
 for (exper in run_expers) {
   
@@ -55,6 +55,8 @@ for (exper in run_expers) {
       if (rep == 1)
         cat("rep: ")
       cat(rep)
+      if (rep < nreps)
+        cat("-")
       if (rep == nreps)
         cat("\n")
       

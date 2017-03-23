@@ -10,7 +10,7 @@ par_seq  <- round(100 * (1:par_divs / (par_divs + 1)))
 par_dirs <- as.character(par_seq)
 
 # Give the names of your experiments: must be manually entered.
-total_expers <- as.character(1:11)
+total_expers <- as.character(1:12)
 
 if (!dir.exists("sims-results/sbm-par-lists"))
   dir.create("sims-results/sbm-par-lists", recursive = TRUE)
@@ -237,9 +237,6 @@ save(par_list,
      par_dirs,
      file = "sims-results/sbm-par-lists/experiment10.RData")
 
-
-writeLines(total_expers, "sims-results/exper-names.txt")
-
 # Experiment 11 -----------------------------------------------------------------
 #----** Special experiment which adjusts algorithm parameter **----#
 
@@ -250,7 +247,7 @@ xlab <- expression(alpha)
 palpha <- TRUE
 axis_par <- 1
 par_settings <- matrix(0, 1, par_divs)
-par_settings[1, ] <- c(0.001, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2)
+par_settings[1, ] <- 0.2 * 2^(-c(0:(par_divs - 1)))
 
 save(par_list,
      main_text,
@@ -262,6 +259,32 @@ save(par_list,
      par_divs,
      par_dirs,
      file = "sims-results/sbm-par-lists/experiment11.RData")
+
+# Experiment 12 -----------------------------------------------------------------
+
+main_text <- "Increase n"
+par_list <- make_param_list()
+pars <- c("n")
+xlab <- "Sample Size"
+palpha <- FALSE
+axis_par <- 1
+par_settings <- matrix(0, 1, par_divs)
+par_settings[1, ] <- round(2000 * (par_seq_dec + min(par_seq_dec) * 
+                                     as.numeric(shove_dec)))
+
+save(par_list,
+     main_text,
+     axis_par,
+     pars,
+     xlab, palpha,
+     par_settings,
+     par_seq,
+     par_divs,
+     par_dirs,
+     file = "sims-results/sbm-par-lists/experiment12.RData")
+
+
+writeLines(total_expers, "sims-results/exper-names.txt")
 
 
 writeLines(total_expers, "sims-results/exper-names.txt")

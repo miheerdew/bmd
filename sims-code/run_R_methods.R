@@ -1,11 +1,14 @@
+run_expers <- sapply(commandArgs(TRUE), as.numeric)
+
 source("sim_eQTL_network.R")
 source("bmd.R")
 total_expers <- readLines("sims-results/exper-names.txt")
-run_expers <- seq_along(total_expers)
+
+runBMD2 <- FALSE
 
 # This should consistent throughout the experiments
 # (and match the same variable in sims/lfr/make_lfr_sims.R)
-nreps <- 20
+nreps <- 50
 
 for (exper in run_expers) {
   
@@ -31,21 +34,23 @@ for (exper in run_expers) {
       curr_dir_p_rep <- file.path(curr_dir_p, rep)
       load(file.path(curr_dir_p_rep, "sim.RData"))
       
-      # Running BMD
-      timer <- proc.time()[3]
-      results <- bmd(sim$X, sim$Y, alpha = alpha,
-                     updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
-                     calc_full_cor = TRUE, updateMethod = 5)
-      timer <- proc.time()[3] - timer
-      save(results, timer, file = file.path(curr_dir_p_rep, "bmd.RData"))
+      if (runBMD2) {
+        # Running BMD2
+        timer <- proc.time()[3]
+        results <- bmd(sim$X, sim$Y, alpha = alpha,
+                       updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
+                       calc_full_cor = TRUE, updateMethod = 5)
+        timer <- proc.time()[3] - timer
+        save(results, timer, file = file.path(curr_dir_p_rep, "bmd2.RData"))
+      }
       
-      # Running BMD2
+      # Running BMD
       timer <- proc.time()[3]
       results <- bmd(sim$X, sim$Y, alpha = alpha,
                      updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
                      calc_full_cor = TRUE, updateMethod = 7)
       timer <- proc.time()[3] - timer
-      save(results, timer, file = file.path(curr_dir_p_rep, "bmd2.RData"))
+      save(results, timer, file = file.path(curr_dir_p_rep, "bmd.RData"))
       
       # Running BCSpectral
       #nbmds <- ifelse(par_list$bgmult > 0, par_list$b + 1, par_list$b)

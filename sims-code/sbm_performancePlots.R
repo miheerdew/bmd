@@ -1,3 +1,5 @@
+plot_expers <- sapply(commandArgs(TRUE), as.numeric)
+
 library(RColorBrewer)
 library(plotrix)
 library(igraph)
@@ -21,9 +23,7 @@ pchs <- c(14, 8, 3, 22, 24, 21)
 getResults <- TRUE
 
 # Plot main text?
-main_text_plot <- TRUE
-
-plot_expers <- 9
+main_text_plot <- FALSE
 
 # This should consistent throughout the experiments
 nreps <- 20
@@ -153,6 +153,7 @@ for (exper in plot_expers) {
   legCex <- 2.5
   lwd <- 3
   dotnmi <- FALSE
+  logaxes <- ifelse(exper %in% c(11), "x", "")
   
   if (exists("axis_par_string")) {
     xlab_string <- axis_par_string
@@ -209,6 +210,8 @@ for (exper in plot_expers) {
       mar = c(11, 11, 6, 4),
       mgp = c(6, 2, 0))
   
+  mtext(main_text, cex = cex.main)
+  
   # BM
   
   suppressWarnings(
@@ -218,8 +221,8 @@ for (exper in plot_expers) {
                                  meanMat = BM_means, tnmi = dotnmi,
                                  sdMat = BM_sds,
                                  xRange = c(paramVec[1], paramVec[length(paramVec)]),
-                                 main = main_str,
-                                 xlab = xlab_string,
+                                 main = main_str, log = logaxes,
+                                 xlab = xlab_string, 
                                  ylab = "Best Match Jaccard",
                                  legPos = "bottomright",
                                  legCex = legCex,
@@ -239,7 +242,7 @@ for (exper in plot_expers) {
                                  meanMat = BM1_means, tnmi = dotnmi,
                                  sdMat = BM1_sds,
                                  xRange = c(paramVec[1], paramVec[length(paramVec)]),
-                                 main = main_str,
+                                 main = main_str, log = logaxes,
                                  xlab = xlab_string,
                                  ylab = "Best Match Res.prop",
                                  legPos = "bottomright",
@@ -261,7 +264,7 @@ for (exper in plot_expers) {
                                  meanMat = BM2_means, tnmi = dotnmi,
                                  sdMat = BM2_sds,
                                  xRange = c(paramVec[1], paramVec[length(paramVec)]),
-                                 main = main_str,
+                                 main = main_str, log = logaxes,
                                  xlab = xlab_string,
                                  ylab = "Best Match Truth.prop",
                                  legPos = "topright",
@@ -283,7 +286,7 @@ for (exper in plot_expers) {
                                  meanMat = BJ_means, tnmi = dotnmi,
                                  sdMat = BJ_sds,
                                  xRange = c(paramVec[1], paramVec[length(paramVec)]),
-                                 main = main_str,
+                                 main = main_str, log = logaxes,
                                  xlab = xlab_string,
                                  ylab = "Background Jaccard",
                                  legPos = "topright",
@@ -305,7 +308,7 @@ for (exper in plot_expers) {
                                  meanMat = SP_means, tnmi = dotnmi,
                                  sdMat = NA,
                                  xRange = c(paramVec[1], paramVec[length(paramVec)]),
-                                 main = main_str,
+                                 main = main_str, log = logaxes,
                                  xlab = xlab_string,
                                  ylab = "StickyProb",
                                  legPos = "topright",
@@ -327,7 +330,7 @@ for (exper in plot_expers) {
                                  meanMat = SP_means, tnmi = dotnmi,
                                  sdMat = NA,
                                  xRange = c(paramVec[1], paramVec[length(paramVec)]),
-                                 main = main_str,
+                                 main = main_str, log = logaxes,
                                  xlab = xlab_string,
                                  ylab = "StickyMean",
                                  legPos = "topright",
@@ -349,7 +352,7 @@ for (exper in plot_expers) {
                                  meanMat = SP_means, tnmi = dotnmi,
                                  sdMat = NA,
                                  xRange = c(paramVec[1], paramVec[length(paramVec)]),
-                                 main = main_str,
+                                 main = main_str, log = logaxes,
                                  xlab = xlab_string,
                                  ylab = "Avg FDR",
                                  legPos = "topright",
@@ -371,7 +374,7 @@ for (exper in plot_expers) {
                                  meanMat = SP_means, tnmi = dotnmi,
                                  sdMat = NA,
                                  xRange = c(paramVec[1], paramVec[length(paramVec)]),
-                                 main = main_str,
+                                 main = main_str, log = logaxes,
                                  xlab = xlab_string,
                                  ylab = "AvgWtdFDR",
                                  legPos = "topright",
