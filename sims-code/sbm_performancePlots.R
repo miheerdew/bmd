@@ -10,23 +10,23 @@ source("sim_eQTL_network.R")
 source("best_match.R")
 
 # Set method names:
-methNames <- c("bmd", "bmd2")
+methNames <- c("bmd")
 
 # Set which methods to plot and their plot names
-plot_meths <- c(1:2)
-plot_names <- c("BMD", "BMD2")
+plot_meths <- c(1)
+plot_names <- c("BMD")
 
 # Set points
 pchs <- c(14, 8, 3, 22, 24, 21)
 
 # Re-get results?
-getResults <- TRUE
+getResults <- FALSE
 
 # Plot main text?
 main_text_plot <- FALSE
 
 # This should consistent throughout the experiments
-nreps <- 20
+nreps <- 50
 
 # Brewing colors
 colPal <- brewer.pal(9, "Set1")
@@ -43,7 +43,7 @@ for (exper in plot_expers) {
   if (exists("axis_par_string")) {rm("axis_par_string")}
   load(file.path("sims-results/sbm-par-lists", paste0(expString, ".RData")))
   
-  allscores <- array(0, dim = c(par_divs, nreps, 8))
+  allscores <- array(0, dim = c(par_divs, nreps, 9))
   methscores <- rep(list(allscores), length(methNames))
   names(methscores) <- methNames
   
@@ -114,10 +114,12 @@ for (exper in plot_expers) {
     BM1_means <- convertToMat(methscores, score = 2)
     BM2_means <- convertToMat(methscores, score = 3)
     BJ_means <- convertToMat(methscores, score = 4)
-    SP_means <- convertToMat(methscores, score = 5)
-    SM_means <- convertToMat(methscores, score = 6)
-    F1_means <- convertToMat(methscores, score = 7)
-    F2_means <- convertToMat(methscores, score = 8)
+    SP0_means <- convertToMat(methscores, score = 5)
+    SP_means <- convertToMat(methscores, score = 6)
+    SM_means <- convertToMat(methscores, score = 7)
+    F1_means <- convertToMat(methscores, score = 8)
+    F2_means <- convertToMat(methscores, score = 9)
+    
       
     BM_sds <- convertToMat(methscores, score = 1, type = "sd")
     BM1_sds <- convertToMat(methscores, score = 2, type = "sd")
@@ -132,6 +134,7 @@ for (exper in plot_expers) {
          SM_means,
          F1_means,
          F2_means,
+         SP0_means,
          file = file.path(root_dir, "plot_results.RData"))
     
   } else {
@@ -146,13 +149,13 @@ for (exper in plot_expers) {
   source("makePerformancePlot.R")
   
   # Some plot defaults
-  cex.main <- 2.5
-  cex.lab <- 2.5
-  cex.axis <- 2.5
+  cex.main <- 4
+  cex.lab <- 3
+  cex.axis <- 3
   cex <- 3.5
-  legCex <- 2.5
+  legCex <- 3
   lwd <- 3
-  dotnmi <- FALSE
+  dotnmi <- TRUE
   logaxes <- ifelse(exper %in% c(11), "x", "")
   
   if (exists("axis_par_string")) {
@@ -199,19 +202,17 @@ for (exper in plot_expers) {
   SM_means <- SM_means[plot_meths, , drop = FALSE]
   F1_means <- F1_means[plot_meths, , drop = FALSE]
   F2_means <- F2_means[plot_meths, , drop = FALSE]
+  SP0_means <- SP0_means[plot_meths, , drop = FALSE]
   rownames(SP_means) <- rownames(SM_means) <- rownames(F1_means) <- 
-    rownames(F2_means) <- plot_names
+    rownames(F2_means) <- rownames(SP0_means) <- plot_names
   
   
   plotfn = file.path("sims-results", paste0(expString, ".png"))
   
   png(plotfn, width = 1500, height = 1500)
-  par(mfrow = c(3, 3), oma = rep(0, 4),
+  par(mfrow = c(3, 3), oma = c(0, 0, 4, 0),
       mar = c(11, 11, 6, 4),
       mgp = c(6, 2, 0))
-  
-  mtext(main_text, cex = cex.main)
-  
   # BM
   
   suppressWarnings(
@@ -277,8 +278,74 @@ for (exper in plot_expers) {
     
   )
   
-  # BJ
+  # StickyProb0
 
+  suppressWarnings(
+    
+    dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
+                                 xvals = paramVec, yRange = c(0, 1),
+                                 meanMat = 1 - SP0_means, tnmi = dotnmi,
+                                 sdMat = NA,
+                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
+                                 main = main_str, log = logaxes,
+                                 xlab = xlab_string,
+                                 ylab = "1 - StickyProb[Any]",
+                                 legPos = "topright",
+                                 legCex = legCex,
+                                 lwd = lwd,
+                                 cex = cex, pchs = pchs,
+                                 cex.main = cex.main,
+                                 cex.lab = cex.lab,
+                                 cex.axis = cex.axis)
+    
+  )
+  
+  # StickyProb
+  
+  suppressWarnings(
+    
+    dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
+                                 xvals = paramVec, yRange = c(0, 1),
+                                 meanMat = 1 - SP_means, tnmi = dotnmi,
+                                 sdMat = NA,
+                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
+                                 main = main_str, log = logaxes,
+                                 xlab = xlab_string,
+                                 ylab = "1 - StickyProb",
+                                 legPos = "topright",
+                                 legCex = legCex,
+                                 lwd = lwd,
+                                 cex = cex, pchs = pchs,
+                                 cex.main = cex.main,
+                                 cex.lab = cex.lab,
+                                 cex.axis = cex.axis)
+    
+  )
+  
+  # StickyMean
+  
+  suppressWarnings(
+    
+    dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
+                                 xvals = paramVec, yRange = c(0, 1),
+                                 meanMat = 1 - SM_means, tnmi = dotnmi,
+                                 sdMat = NA,
+                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
+                                 main = main_str, log = logaxes,
+                                 xlab = xlab_string,
+                                 ylab = "StickyMean",
+                                 legPos = "topright",
+                                 legCex = legCex,
+                                 lwd = lwd,
+                                 cex = cex, pchs = pchs,
+                                 cex.main = cex.main,
+                                 cex.lab = cex.lab,
+                                 cex.axis = cex.axis)
+    
+  )
+  
+  # BJ
+  
   suppressWarnings(
     
     dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
@@ -299,62 +366,18 @@ for (exper in plot_expers) {
     
   )
   
-  # StickyProb
-  
-  suppressWarnings(
-    
-    dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
-                                 xvals = paramVec, yRange = c(0, 1),
-                                 meanMat = SP_means, tnmi = dotnmi,
-                                 sdMat = NA,
-                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
-                                 main = main_str, log = logaxes,
-                                 xlab = xlab_string,
-                                 ylab = "StickyProb",
-                                 legPos = "topright",
-                                 legCex = legCex,
-                                 lwd = lwd,
-                                 cex = cex, pchs = pchs,
-                                 cex.main = cex.main,
-                                 cex.lab = cex.lab,
-                                 cex.axis = cex.axis)
-    
-  )
-  
-  # StickyMean
-  
-  suppressWarnings(
-    
-    dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
-                                 xvals = paramVec, yRange = c(0, 1),
-                                 meanMat = SP_means, tnmi = dotnmi,
-                                 sdMat = NA,
-                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
-                                 main = main_str, log = logaxes,
-                                 xlab = xlab_string,
-                                 ylab = "StickyMean",
-                                 legPos = "topright",
-                                 legCex = legCex,
-                                 lwd = lwd,
-                                 cex = cex, pchs = pchs,
-                                 cex.main = cex.main,
-                                 cex.lab = cex.lab,
-                                 cex.axis = cex.axis)
-    
-  )
-  
   # Avg FDR
   
   suppressWarnings(
     
     dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
                                  xvals = paramVec, yRange = c(0, 1),
-                                 meanMat = SP_means, tnmi = dotnmi,
+                                 meanMat = 1 - F1_means, tnmi = dotnmi,
                                  sdMat = NA,
                                  xRange = c(paramVec[1], paramVec[length(paramVec)]),
                                  main = main_str, log = logaxes,
                                  xlab = xlab_string,
-                                 ylab = "Avg FDR",
+                                 ylab = "1 - Avg FDR",
                                  legPos = "topright",
                                  legCex = legCex,
                                  lwd = lwd,
@@ -371,12 +394,12 @@ for (exper in plot_expers) {
     
     dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
                                  xvals = paramVec, yRange = c(0, 1),
-                                 meanMat = SP_means, tnmi = dotnmi,
+                                 meanMat = 1 - F2_means, tnmi = dotnmi,
                                  sdMat = NA,
                                  xRange = c(paramVec[1], paramVec[length(paramVec)]),
                                  main = main_str, log = logaxes,
                                  xlab = xlab_string,
-                                 ylab = "AvgWtdFDR",
+                                 ylab = "1 - AvgWtdFDR",
                                  legPos = "topright",
                                  legCex = legCex,
                                  lwd = lwd,
@@ -386,6 +409,8 @@ for (exper in plot_expers) {
                                  cex.axis = cex.axis)
     
   )
+  
+  mtext(main_text, outer = TRUE, cex = cex.main)
   
   dev.off()
   

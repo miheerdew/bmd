@@ -40,7 +40,7 @@ best_match_bimodule <- function (C1, C2, bg1, bg2,
     BM2 <- 0
     
     if (truthSecond && n == 0) {
-      StickyProb <- StickyMean <- 0
+      StickyProb <- StickyMean <- StickyProb0 <- 0
       AvgFDR <- AvgWtdFDR <- 0
     }
     
@@ -75,12 +75,13 @@ best_match_bimodule <- function (C1, C2, bg1, bg2,
     BM1 <- (sum(apply(J1, 1, min)) + sum(apply(J1, 2, min))) / (2 * (n + m))
     BM2 <- (sum(apply(J2, 1, min)) + sum(apply(J2, 2, min))) / (2 * (n + m))
     if (truthSecond) {
+      StickyProb0 <- as.numeric(sum(rowSums(J <= .50) > 1) > 1)
       StickyProb <- mean(rowSums(J <= .50) > 1)
       StickyCounts <- rowSums(J <= .50)
       StickyMean <- mean(StickyCounts[StickyCounts > 1])
       StickyMean <- ifelse(is.nan(StickyMean), 0, StickyMean)
     } else {
-      StickyProb <- StickyMean <- NA
+      StickyProb <- StickyMean <- StickyProb0 <- NA
     }
 
   }
@@ -89,6 +90,7 @@ best_match_bimodule <- function (C1, C2, bg1, bg2,
            "BestMatch1" = 1 - BM1,
            "BestMatch2" = 1 - BM2, 
            "BackgroundMatch" = 1 - BJ,
+           "StickyProb0" = StickyProb0,
            "StickyProb" = StickyProb,
            "StickyMean" = StickyMean,
            "AvgFDR" = AvgFDR,
