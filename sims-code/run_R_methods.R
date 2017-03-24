@@ -2,9 +2,12 @@ run_expers <- sapply(commandArgs(TRUE), as.numeric)
 
 source("sim_eQTL_network.R")
 source("bmd.R")
+source("run_brim.R")
 total_expers <- readLines("sims-results/exper-names.txt")
 
 runBMD2 <- FALSE
+runBMD <- FALSE
+runBRIM <- TRUE
 
 # This should consistent throughout the experiments
 # (and match the same variable in sims/lfr/make_lfr_sims.R)
@@ -34,8 +37,8 @@ for (exper in run_expers) {
       curr_dir_p_rep <- file.path(curr_dir_p, rep)
       load(file.path(curr_dir_p_rep, "sim.RData"))
       
+      # Running BMD2
       if (runBMD2) {
-        # Running BMD2
         timer <- proc.time()[3]
         results <- bmd(sim$X, sim$Y, alpha = alpha,
                        updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
@@ -45,12 +48,25 @@ for (exper in run_expers) {
       }
       
       # Running BMD
-      timer <- proc.time()[3]
-      results <- bmd(sim$X, sim$Y, alpha = alpha,
-                     updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
-                     calc_full_cor = TRUE, updateMethod = 7)
-      timer <- proc.time()[3] - timer
-      save(results, timer, file = file.path(curr_dir_p_rep, "bmd.RData"))
+      if (runBMD) {
+        timer <- proc.time()[3]
+        results <- bmd(sim$X, sim$Y, alpha = alpha,
+                       updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
+                       calc_full_cor = TRUE, updateMethod = 7)
+        timer <- proc.time()[3] - timer
+        save(results, timer, file = file.path(curr_dir_p_rep, "bmd.RData"))
+      }
+      
+      # Running BRIM
+      if (runBRIM) {
+        timer <- proc.time()[3]
+        resultsXY <- run_brim(sim$X, sim$Y, alpha = alpha)
+        timer <- proc.time()[3] - timer
+        results <- resultsXY[[1]]
+        save(results, timer, file = file.path(curr_dir_p_rep, "brimX.RData"))
+        results <- resultsXY[[2]]
+        save(results, timer, file = file.path(curr_dir_p_rep, "brimY.RData"))
+      }
       
       # Running BCSpectral
       #nbmds <- ifelse(par_list$bgmult > 0, par_list$b + 1, par_list$b)
