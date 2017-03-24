@@ -20,7 +20,7 @@ plot_names <- c("BMD")
 pchs <- c(14, 8, 3, 22, 24, 21)
 
 # Re-get results?
-getResults <- FALSE
+getResults <- TRUE
 
 # Plot main text?
 main_text_plot <- FALSE
