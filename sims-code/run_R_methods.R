@@ -3,11 +3,13 @@ run_expers <- sapply(commandArgs(TRUE), as.numeric)
 source("sim_eQTL_network.R")
 source("bmd.R")
 source("run_brim.R")
+source("ircc.R")
 total_expers <- readLines("sims-results/exper-names.txt")
 
 runBMD2 <- FALSE
-runBMD <- FALSE
-runBRIM <- TRUE
+runBMD <- TRUE
+runBRIM <- FALSE
+runkmeans <- TRUE
 
 # This should consistent throughout the experiments
 # (and match the same variable in sims/lfr/make_lfr_sims.R)
@@ -68,12 +70,14 @@ for (exper in run_expers) {
         save(results, timer, file = file.path(curr_dir_p_rep, "brimY.RData"))
       }
       
-      # Running BCSpectral
-      #nbmds <- ifelse(par_list$bgmult > 0, par_list$b + 1, par_list$b)
-      #timer <- proc.time()[3]
-      #results <- bcmethods(sim$X, sim$Y, nbmds, ..., method = "spectral")
-      #timer <- proc.time()[3] - timer
-      #save(results, timer, file = file.path(curr_dir_p_rep, "bcspectral.RData"))
+      # Running IRCC-kmeans
+      if (runkmeans) {
+        nbmds <- ifelse(par_list$bgmult > 0, par_list$b + 1, par_list$b)
+        timer <- proc.time()[3]
+        results <- ircc(sim$X, sim$Y, nbmds = nbmds, method = "kmeans")
+        timer <- proc.time()[3] - timer
+        save(results, timer, file = file.path(curr_dir_p_rep, "kmeans.RData"))
+      }
         
       rm(sim, results)
       gc()

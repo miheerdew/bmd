@@ -10,11 +10,11 @@ source("sim_eQTL_network.R")
 source("best_match.R")
 
 # Set method names:
-methNames <- c("bmd")
+methNames <- c("bmd", "kmeans")
 
 # Set which methods to plot and their plot names
-plot_meths <- c(1)
-plot_names <- c("BMD")
+plot_meths <- c(1:2)
+plot_names <- c("BMD", "k-means")
 
 # Set points
 pchs <- c(14, 8, 3, 22, 24, 21)
