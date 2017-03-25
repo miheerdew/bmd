@@ -8,6 +8,8 @@
 
 ircc.kmeans <- function(X, Y, k, centers.X=NULL, centers.Y=NULL, ...) {
   cormat <- cor(X,Y)
+  n <- nrow(X)
+  cormat <- atanh(cormat) * sqrt(n - 3)
   d <- ncol(X)
 
   as.partition <- function(partition_map){

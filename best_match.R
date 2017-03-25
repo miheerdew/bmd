@@ -20,8 +20,21 @@ jaccard <- function (s1, s2) {
   return(length(symdiff(s1, s2)) / length(union(s1, s2)))
 }
 
-best_match_bimodule <- function (C1, C2, bg1, bg2,
-                                 truthSecond = TRUE) {
+best_match_bimodule <- function (C1, C2, bg1 = NULL, bg2 = NULL,
+                                 truthSecond = TRUE,
+                                 forcebg = FALSE) {
+  
+  if (forcebg & !is.null(bg2)) { # then find the C1 cluster that has
+                                 # closest jaccard to bg2;
+                                 # remove it from C1, and set as bg1
+    bgjaccards <- rep(0, length(C1))
+    for (i in 1:length(C1)) {
+      bgjaccards[i] <- jaccard(C1[[i]], bg2)
+    }
+    bgmatch <- which.min(bgjaccards)
+    bg1 <- C1[[bgmatch]]
+    C1 <- C1[-bgmatch]
+  }
   
   n <- length(C1)
   m <- length(C2)

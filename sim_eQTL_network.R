@@ -48,8 +48,9 @@ sim_eQTL_network <- function (par_list, randomizeBeta = TRUE) {
   dbg <- round(bgmult * b * avgsize)
   if (is.null(bgb)) {
     bgb <- round(dbg / avgsize)
-    bgb <- max(bgb, 2)
+    bgb <- max(bgb, 1)
   }
+  dbg <- max(dbg, 3 * bgb)
   dx <- sum(Xsizes) + dbg; dy <- sum(Ysizes) + dbg
   
   # Initializing loop
@@ -87,21 +88,31 @@ sim_eQTL_network <- function (par_list, randomizeBeta = TRUE) {
   if (dbg > 0) {
     
     # Making background blocks----------------------------------------------------
-    # Getting X background indexs
-    breakpoints <- sort(sample(1:dbg, bgb - 1, replace = FALSE))
-    Xbgindxs <- lapply(2:(bgb - 1), 
-                       function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
-    Xbgindxs <- c(list(1:breakpoints[1]), 
-                  Xbgindxs, 
-                  list(breakpoints[bgb - 1]:dbg))
     
-    # Getting Y background indexs
-    breakpoints <- sort(sample(1:dbg, bgb - 1, replace = FALSE))
-    Ybgindxs <- lapply(2:(bgb - 1), 
-                       function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
-    Ybgindxs <- c(list(1:breakpoints[1]), 
-                  Ybgindxs, 
-                  list(breakpoints[bgb - 1]:dbg))
+    if (bgb == 1) {
+      Xbgindxs <- Ybgindxs <- list(1:dbg)
+    }
+    breakpointsX <- sort(sample(2:(dbg - 1), bgb - 1, replace = FALSE))
+    breakpointsY <- sort(sample(2:(dbg - 1), bgb - 1, replace = FALSE))
+    if (bgb == 2) {
+      Xbgindxs <- c(list(1:breakpoints[1]), 
+                    list(breakpoints[bgb - 1]:dbg))
+      Ybgindxs <- c(list(1:breakpoints[1]), 
+                    list(breakpoints[bgb - 1]:dbg))
+    }
+    if (bgb > 2) {
+      Xbgindxs <- lapply(2:(bgb - 1), 
+                         function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
+      Xbgindxs <- c(list(1:breakpoints[1]), 
+                    Xbgindxs, 
+                    list(breakpoints[bgb - 1]:dbg))
+      
+      Ybgindxs <- lapply(2:(bgb - 1), 
+                         function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
+      Ybgindxs <- c(list(1:breakpoints[1]), 
+                    Ybgindxs, 
+                    list(breakpoints[bgb - 1]:dbg))
+    }
     
     # Getting intracorrs
     Xrhos <- runif(bgb, 0, maxNoiseCor)

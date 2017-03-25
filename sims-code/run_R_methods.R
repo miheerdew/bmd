@@ -7,7 +7,7 @@ source("ircc.R")
 total_expers <- readLines("sims-results/exper-names.txt")
 
 runBMD2 <- FALSE
-runBMD <- TRUE
+runBMD <- FALSE
 runBRIM <- FALSE
 runkmeans <- TRUE
 
