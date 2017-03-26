@@ -1,12 +1,20 @@
 # Examples:
 #
+# K-means
+# ---------
 # Specifiying the centers within each bimodule
 # res <- ircc(sim$X, sim$Y, 4, centers.X=c(1,101,201,301), centers.Y=c(1,101,201,301))
 #
 # By specifying just the number of bimodules.
 # res <- ircc(sim$X, sim$Y, 4)
+#
+#
+# Hclust
+# -------
 
-ircc.kmeans <- function(X, Y, k, centers.X=NULL, centers.Y=NULL, ...) {
+clustering_approach_to_bmd <- function(X, Y, k, clustering_algo,
+                                      Xargs=NULL,
+                                      Yargs=NULL){
   cormat <- cor(X,Y)
   n <- nrow(X)
   cormat <- atanh(cormat) * sqrt(n - 3)
@@ -16,21 +24,8 @@ ircc.kmeans <- function(X, Y, k, centers.X=NULL, centers.Y=NULL, ...) {
     lapply(1:max(partition_map), function(i) which(partition_map == i))
   }
 
-
-  if (is.null(centers.X)) {
-    centers <- k
-  } else {
-    centers <- cormat[centers.X,]
-  }
-  
-  CX <- as.partition(kmeans(cormat, centers, ...)$cluster)
-  
-  if (is.null(centers.Y)) {
-    centers <- k
-  } else {
-    centers <- t(cormat)[centers.Y,]
-  }
-  CY <- as.partition(kmeans(t(cormat), centers, ...)$cluster)
+  CX <- as.partition(clustering_algo(cormat, k, Xargs))
+  CY <- as.partition(clustering_algo(t(cormat), k, Yargs))
 
   mean_cor <- function(i,j){
     mean(cormat[CX[[i]], CY[[j]]])
@@ -38,8 +33,6 @@ ircc.kmeans <- function(X, Y, k, centers.X=NULL, centers.Y=NULL, ...) {
 
   #Calculate mean-correlation between CX and CY.
   M <- outer(1:k, 1:k, function(x,y) mapply(mean_cor, x, y, SIMPLIFY = TRUE))
-
-  #image(M)
 
   comms <- rep(list(NULL), k)
   X_ind <- Y_ind <- 1:k #Cluster indices
@@ -53,17 +46,50 @@ ircc.kmeans <- function(X, Y, k, centers.X=NULL, centers.Y=NULL, ...) {
     count <- count + 1
   }
   return(comms)
+}
 
+ircc.kmeans <- function(X, Y, k, centers.X=NULL, centers.Y=NULL) {
+
+    clustering.kmeans <- function(data, k, args){
+    if (!is.null(args)) {
+      centers <- data[args,]
+    } else {
+      centers <- k
+    }
+    kmeans(data, centers)$cluster
+  }
+
+  clustering_approach_to_bmd(X, Y, k, clustering.kmeans,
+                                      Xargs = centers.X,
+                                      Yargs = centers.Y)
+}
+
+ircc.hclust <- function(X, Y, k){
+  clustering.hclust <- function(data, k, args){
+    d <- dist(data)
+    hc <- hclust(d)
+    cutree(hc, k)
+  }
+
+  clustering_approach_to_bmd(X, Y, k, clustering.hclust)
 }
 
 ircc <- function(X, Y, nbmds, ..., method = "kmeans") {
-  
+
   if (method == "kmeans") {
-    
+
     res <- ircc.kmeans(X, Y, k = nbmds, ...)
-    
+
+  } else if (method == "hclust"){
+
+    res <- ircc.hclust(X, Y, k = nbmds, ...)
+
+  } else{
+
+    stop(paste("Method", method,"not supported."))
+
   }
-  
+
   return(res)
-  
+
 }
