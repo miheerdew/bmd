@@ -2,7 +2,7 @@ library(Rcpp)
 library(RcppParallel)
 source("makeVars.R")
 source("stdize.R")
-sourceCpp("correlation.cpp")
+#sourceCpp("correlation.cpp")
 
 bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL, cp_cor = TRUE,
                  updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
