@@ -4,7 +4,7 @@ tonmi <- function(x, a) {
 
 makePerformancePlot <-  function (fn = NULL, meanMat, sdMat = NULL,
                                   legPos = "topright", xvals, tnmi = FALSE,
-                                  tnmi_a = 0.05,
+                                  tnmi_a = 0.05, pns = plot_names,
                                   legCex = 2, pchs = 1:nrow(meanMat),
                                   lwd = 1, legLwd = 2, yRange = NULL,
                                   cex = 1, new = TRUE, doLegend = TRUE,
@@ -41,11 +41,11 @@ makePerformancePlot <-  function (fn = NULL, meanMat, sdMat = NULL,
   plot(0.5, 0.5, col="white", pch='.',
        xlim = xRange, ylim = yRange, ...)
   
-  for(j in 1:length(plot_names)){
+  for(j in 1:length(pns)){
     
     if (new) {
       
-      meth = plot_names[j]
+      meth = pns[j]
       points(xvals, meanMat[meth, ], pch = pchs[j], cex = cex, col = colPal[j])
       lines(xvals, meanMat[meth, ], lty = j + 1, lwd = lwd, col = colPal[j])
       if (tnmi) {
@@ -57,7 +57,7 @@ makePerformancePlot <-  function (fn = NULL, meanMat, sdMat = NULL,
       
     } else {
     
-      meth = plot_names[j]
+      meth = pns[j]
       plotCI(x = xvals,
              y = meanMat[meth, ],
              uiw = sdMat[meth, ],         
@@ -79,18 +79,18 @@ makePerformancePlot <-  function (fn = NULL, meanMat, sdMat = NULL,
   if (doLegend) {
     if (new) {
       
-      legend(x = legPos, legend = plot_names, lty = 1 + 1:length(plot_names),
+      legend(x = legPos, legend = pns, lty = 1 + 1:length(pns),
              cex = legCex, lwd = legLwd, pch = pchs, col = colPal)
       
     } else {
     
     legend(x = legPos,
-           legend = plot_names,
+           legend = pns,
            col = colPal,
            lty = 1,
            lwd = lwd,
            pt.cex = cex,
-           pch = 1:length(plot_names),
+           pch = 1:length(pns),
            cex = legCex)
       
     }

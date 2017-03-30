@@ -71,7 +71,7 @@ for (exper in run_expers) {
       if (runkmeans) {
         nbmds <- ifelse(par_list$bgmult > 0, par_list$b + 1, par_list$b)
         timer <- proc.time()[3]
-        results <- ircc(sim$X, sim$Y, nbmds = nbmds, method = "kmeans")
+        results <- ircc(sim$X, sim$Y, nbmds = nbmds, nstart = 2, method = "kmeans")
         timer <- proc.time()[3] - timer
         save(results, timer, file = file.path(curr_dir_p_rep, "kmeans.RData"))
       }
