@@ -22,11 +22,12 @@ jaccard <- function (s1, s2) {
 
 best_match_bimodule <- function (C1, C2, bg1 = NULL, bg2 = NULL,
                                  truthSecond = TRUE,
-                                 forcebg = FALSE) {
-  
-  if (forcebg & !is.null(bg2)) { # then find the C1 cluster that has
-                                 # closest jaccard to bg2;
-                                 # remove it from C1, and set as bg1
+                                 forcebg = TRUE) {
+
+  if (forcebg & !is.null(bg2) & length(C1) > 0) { 
+    # then find the C1 cluster that has
+    # closest jaccard to bg2;
+    # remove it from C1, and set as bg1
     bgjaccards <- rep(0, length(C1))
     for (i in 1:length(C1)) {
       bgjaccards[i] <- jaccard(C1[[i]], bg2)
@@ -36,16 +37,15 @@ best_match_bimodule <- function (C1, C2, bg1 = NULL, bg2 = NULL,
     C1 <- C1[-bgmatch]
   }
   
+  
   n <- length(C1)
   m <- length(C2)
   J <- J1 <- J2 <- matrix(0, n, m)
   
   # Computing jaccard distance between background declarations
   BJ <- ifelse(length(bg1) + length(bg2) == 0, 0, jaccard(bg1, bg2))
-  
-  
+
   # Computing metrics for communities
-  
   if (n * m == 0) {
     
     BM <- 1

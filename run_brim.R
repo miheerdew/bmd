@@ -36,8 +36,8 @@ run_brim <- function(X, Y, alpha = 0.05) {
   # Making sure no r/c are zero
   zeroDegsR <- rowSums(crossSigMat) == 0
   zeroDegsC <- colSums(crossSigMat) == 0
-  CSM_red <- crossSigMat[!zeroDegsR, !zeroDegsC]
-  if (sum(zeroDegs) == length(zeroDegs)) {
+  CSM_red <- crossSigMat[!zeroDegsR, !zeroDegsC, drop = FALSE]
+  if (sum(!zeroDegsR) <= 1 || sum(!zeroDegsC) <= 1) {
     BRIMresults <- list("communities" = list("X_sets" = NULL, "Y_sets" = NULL),
                         "background" = 1:(p1 + p2))
   } else {

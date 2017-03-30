@@ -19,11 +19,11 @@ source("sim_eQTL_network.R")
 source("best_match.R")
 
 # Set method names:
-methNames <- c("bmd", "kmeans", "brimX", "brimY")
+methNames <- c("bmd", "kmeans", "brim")
 
 # Set which methods to plot and their plot names
-plot_meths <- c(1:4)
-plot_names <- c("BMD", "k-means", "BRIM-X", "BRIM-Y")
+plot_meths <- c(1:3)
+plot_names <- c("BMD", "k-means", "BRIM")
 
 # Set points
 pchs <- c(14, 8, 3, 22, 24, 21)
@@ -93,10 +93,14 @@ for (exper in plot_expers) {
                                               comms$Y_sets[[i]]))
           bg <- setdiff(1:(dx + dy), 
                         c(unlist(comms$X_sets), unlist(comms$Y_sets)))
+          if (meth == "kmeans") {
+            bg1 <- NULL
+          } else {
+            bg1 <- bg
+          }
           true_bg <- setdiff(1:(dx + dy),
                              c(unlist(sim$bm)))
-          scores <- best_match_bimodule(full_comms, sim$bms,
-                                        bg, true_bg)
+          scores <- best_match_bimodule(full_comms, sim$bms, bg1 = bg1, true_bg)
           methscores[[meth]][p, rep, ] <- scores
           
           methtimes[[meth]][p, rep] <- timer
@@ -216,8 +220,9 @@ for (exper in plot_expers) {
   F1_means <- F1_means[plot_meths, , drop = FALSE]
   F2_means <- F2_means[plot_meths, , drop = FALSE]
   SP0_means <- SP0_means[plot_meths, , drop = FALSE]
+  timer_means <- timer_means[plot_meths, , drop = FALSE]
   rownames(SP_means) <- rownames(SM_means) <- rownames(F1_means) <- 
-    rownames(F2_means) <- rownames(SP0_means) <- plot_names
+    rownames(F2_means) <- rownames(SP0_means) <- rownames(timer_means) <- plot_names
   
   
   plotfn = file.path("sims-results", paste0(expString, ".png"))
@@ -226,6 +231,7 @@ for (exper in plot_expers) {
   par(mfrow = c(3, 3), oma = c(0, 0, 4, 0),
       mar = c(11, 11, 6, 4),
       mgp = c(6, 2, 0))
+  
   # BM
   
   suppressWarnings(
@@ -426,21 +432,71 @@ for (exper in plot_expers) {
   mtext(main_text, outer = TRUE, cex = cex.main)
   
   dev.off()
+
+  #-----------------------------------------------------------------------------
+    
+  plotfn2 = file.path("sims-results", paste0(expString, "_abridged.png"))
   
-  # Timers
-  
-  timer_means <- timer_means[c(1:2), , drop = FALSE]
-  rownames(timer_means) <- plot_names[c(1:2)]
+  png(plotfn2, width = 1500, height = 500)
+  par(mfrow = c(1, 3), oma = c(0, 0, 4, 0),
+      mar = c(11, 11, 6, 4),
+      mgp = c(6, 2, 0))
+
+  # BM
   
   suppressWarnings(
     
-    dummy <- makePerformancePlot(plotFile = TRUE, fn = file.path("sims-results", paste0(expString, "_timers.png")),
-                                 doLegend = TRUE,
+    dummy <- makePerformancePlot(plotFile = FALSE, 
+                                 xvals = paramVec, yRange = c(0, 1),
+                                 meanMat = BM_means, tnmi = dotnmi,
+                                 sdMat = BM_sds,
+                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
+                                 main = main_str, log = logaxes,
+                                 xlab = xlab_string, 
+                                 ylab = "Best Match Jaccard",
+                                 legPos = "bottomright",
+                                 legCex = legCex,
+                                 lwd = lwd,
+                                 cex = cex, pchs = pchs,
+                                 cex.main = cex.main,
+                                 cex.lab = cex.lab,
+                                 cex.axis = cex.axis)
+  )
+  
+  # BJ
+  
+  suppressWarnings(
+    
+    dummy <- makePerformancePlot(plotFile = FALSE, doLegend = FALSE,
+                                 xvals = paramVec, yRange = c(0, 1),
+                                 meanMat = BJ_means, tnmi = dotnmi,
+                                 sdMat = BJ_sds,
+                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
+                                 main = main_str, log = logaxes,
+                                 xlab = xlab_string,
+                                 ylab = "Background Jaccard",
+                                 legPos = "topright",
+                                 legCex = legCex,
+                                 lwd = lwd,
+                                 cex = cex, pchs = pchs,
+                                 cex.main = cex.main,
+                                 cex.lab = cex.lab,
+                                 cex.axis = cex.axis)
+    
+  )
+  
+  # Timers
+  
+  
+  suppressWarnings(
+    
+    dummy <- makePerformancePlot(plotFile = FALSE,
+                                 doLegend = FALSE,
                                  xvals = paramVec,
                                  meanMat = timer_means, tnmi = FALSE, log = logaxes,
-                                 sdMat = NA, pns = plot_names[c(1:2)],
+                                 sdMat = NA, pns = plot_names,
                                  xRange = c(paramVec[1], paramVec[length(paramVec)]),
-                                 main = "Run Times", yRange = c(0, max(timer_means)),
+                                 main = "", yRange = c(0, max(timer_means)),
                                  xlab = xlab_string,
                                  ylab = "runtime (sec)",
                                  legPos = "topleft",
@@ -452,5 +508,9 @@ for (exper in plot_expers) {
                                  cex.axis = cex.axis)
     
   )
+  
+  mtext(main_text, outer = TRUE, cex = cex.main)
+  
+  dev.off()
   
 }

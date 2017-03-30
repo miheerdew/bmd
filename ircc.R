@@ -56,7 +56,7 @@ ircc.kmeans <- function(X, Y, k, centers.X=NULL, centers.Y=NULL) {
     } else {
       centers <- k
     }
-    kmeans(data, centers)$cluster
+    kmeans(data, centers, nstart = 3)$cluster
   }
 
   clustering_approach_to_bmd(X, Y, k, clustering.kmeans,
