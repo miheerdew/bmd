@@ -48,9 +48,10 @@ best_match_bimodule <- function (C1, C2, bg1 = NULL, bg2 = NULL,
   
   if (n * m == 0) {
     
-    BM <- 0
-    BM1 <- 0
-    BM2 <- 0
+    BM <- 1
+    BM1 <- 1
+    BM2 <- 1
+    BJ <- 1 - length(bg2) / length(union(unlist(C1), unlist(C2)))
     
     if (truthSecond && n == 0) {
       StickyProb <- StickyMean <- StickyProb0 <- 0

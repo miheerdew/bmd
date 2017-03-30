@@ -4,17 +4,26 @@ library(RColorBrewer)
 library(plotrix)
 library(igraph)
 
+# Some plot defaults
+cex.main <- 4
+cex.lab <- 3
+cex.axis <- 3
+cex <- 3.5
+legCex <- 3
+lwd <- 3
+dotnmi <- FALSE
+
 total_expers <- readLines("sims-results/exper-names.txt")
 
 source("sim_eQTL_network.R")
 source("best_match.R")
 
 # Set method names:
-methNames <- c("bmd", "kmeans")
+methNames <- c("bmd", "kmeans", "brimX", "brimY")
 
 # Set which methods to plot and their plot names
-plot_meths <- c(1:2)
-plot_names <- c("BMD", "k-means")
+plot_meths <- c(1:4)
+plot_names <- c("BMD", "k-means", "BRIM-X", "BRIM-Y")
 
 # Set points
 pchs <- c(14, 8, 3, 22, 24, 21)
@@ -44,8 +53,10 @@ for (exper in plot_expers) {
   load(file.path("sims-results/sbm-par-lists", paste0(expString, ".RData")))
   
   allscores <- array(0, dim = c(par_divs, nreps, 9))
+  alltimes <- array(0, dim = c(par_divs, nreps))
   methscores <- rep(list(allscores), length(methNames))
-  names(methscores) <- methNames
+  methtimes <- rep(list(alltimes), length(methNames))
+  names(methscores) <- names(methtimes) <- methNames
   
   if (getResults) {
     
@@ -69,9 +80,17 @@ for (exper in plot_expers) {
           meth_fn <- file.path(curr_dir_p_rep, paste0(meth, ".RData"))
           load(meth_fn)
           
-          comms <- results$communities
+          if (meth == "kmeans") {
+            X_sets <- lapply(results, function (L) L[L <= dx])
+            Y_sets <- lapply(results, function (L) L[L > dx])
+            comms <- list("X_sets" = X_sets,
+                          "Y_sets" = Y_sets)
+          } else {
+            comms <- results$communities
+          }
           full_comms <- lapply(seq_along(comms$X_sets),
-                               function (i) c(comms$X_sets[[i]],                                             comms$Y_sets[[i]]))
+                               function (i) c(comms$X_sets[[i]],                                             
+                                              comms$Y_sets[[i]]))
           bg <- setdiff(1:(dx + dy), 
                         c(unlist(comms$X_sets), unlist(comms$Y_sets)))
           true_bg <- setdiff(1:(dx + dy),
@@ -79,8 +98,10 @@ for (exper in plot_expers) {
           scores <- best_match_bimodule(full_comms, sim$bms,
                                         bg, true_bg)
           methscores[[meth]][p, rep, ] <- scores
+          
+          methtimes[[meth]][p, rep] <- timer
         
-          rm(results)
+          rm(results, timer)
           gc()
           
         }
@@ -91,8 +112,6 @@ for (exper in plot_expers) {
       }
       
     }
-    
-    
       
     convertToMat <- function (resultsList, type = "mean", score = 1) {
       
@@ -119,7 +138,8 @@ for (exper in plot_expers) {
     SM_means <- convertToMat(methscores, score = 7)
     F1_means <- convertToMat(methscores, score = 8)
     F2_means <- convertToMat(methscores, score = 9)
-    
+    timer_means <- lapply(methtimes, function (mat) apply(mat, 1, mean))
+    timer_means <- do.call(rbind, timer_means)
       
     BM_sds <- convertToMat(methscores, score = 1, type = "sd")
     BM1_sds <- convertToMat(methscores, score = 2, type = "sd")
@@ -135,6 +155,7 @@ for (exper in plot_expers) {
          F1_means,
          F2_means,
          SP0_means,
+         timer_means,
          file = file.path(root_dir, "plot_results.RData"))
     
   } else {
@@ -147,15 +168,7 @@ for (exper in plot_expers) {
   colPal <- colPal[1:length(methNames)]
   
   source("makePerformancePlot.R")
-  
-  # Some plot defaults
-  cex.main <- 4
-  cex.lab <- 3
-  cex.axis <- 3
-  cex <- 3.5
-  legCex <- 3
-  lwd <- 3
-  dotnmi <- TRUE
+
   logaxes <- ifelse(exper %in% c(11), "x", "")
   
   if (exists("axis_par_string")) {
@@ -413,5 +426,31 @@ for (exper in plot_expers) {
   mtext(main_text, outer = TRUE, cex = cex.main)
   
   dev.off()
+  
+  # Timers
+  
+  timer_means <- timer_means[c(1:2), , drop = FALSE]
+  rownames(timer_means) <- plot_names[c(1:2)]
+  
+  suppressWarnings(
+    
+    dummy <- makePerformancePlot(plotFile = TRUE, fn = file.path("sims-results", paste0(expString, "_timers.png")),
+                                 doLegend = TRUE,
+                                 xvals = paramVec,
+                                 meanMat = timer_means, tnmi = FALSE, log = logaxes,
+                                 sdMat = NA, pns = plot_names[c(1:2)],
+                                 xRange = c(paramVec[1], paramVec[length(paramVec)]),
+                                 main = "Run Times", yRange = c(0, max(timer_means)),
+                                 xlab = xlab_string,
+                                 ylab = "runtime (sec)",
+                                 legPos = "topleft",
+                                 legCex = legCex,
+                                 lwd = lwd,
+                                 cex = cex, pchs = pchs,
+                                 cex.main = cex.main,
+                                 cex.lab = cex.lab,
+                                 cex.axis = cex.axis)
+    
+  )
   
 }
