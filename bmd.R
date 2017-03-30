@@ -1,12 +1,16 @@
+library(Rcpp)
+library(RcppParallel)
 source("makeVars.R")
 source("stdize.R")
-bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
+sourceCpp("correlation.cpp")
+
+bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL, cp_cor = TRUE,
                  updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
                  updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1,
-                 bmd_index=NULL, calc_full_cor=FALSE) {
+                 bmd_index=NULL, calc_full_cor=FALSE, loop_limit = Inf) {
   # bmd_index : A function that maps each vertex to the index of the bimodule
   #           it contains.
-
+  
   if (FALSE) {
     alpha = 0.05
     OL_thres = 0.9
@@ -21,8 +25,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     throwInitial = TRUE
     inv.length = TRUE
     time_limit = Inf
+    loop_limit = Inf
     add_rate = 1
-    calc_full_cor=FALSE
+    calc_full_cor=TRUE
     bmd_index=NULL
   }
   
@@ -104,9 +109,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       return(integer(0))
     }
   }
-
+  
   # Setup calculations    
-
+  
   n <- nrow(X)
   dx <- ncol(X)
   dy <- ncol(Y)
@@ -120,9 +125,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
   
   Xindx <- 1:dx
   Yindx <- (dx + 1):(dx + dy)
-
+  
   cross_cor <- function(X_indx=1:dx, Y_indx=1:dy){
-    if (exists("full_xy_cor")){
+    if (calc_full_cor){
       return(full_xy_cor[X_indx, Y_indx, drop = FALSE])
     } else {
       return(cor(as.matrix(X[,X_indx, drop = FALSE]), as.matrix(Y[,Y_indx, drop = FALSE])))
@@ -142,12 +147,17 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       
       # Getting fixed matrix
       fixdIndx <- match(B, Yindx)
-      fixdMat <- as.matrix(Y_scaled[ , fixdIndx, drop = FALSE])
-
+      fixdMat <- Y_scaled[ , fixdIndx, drop = FALSE]
+      
       # Calculating the variances
       {
         # General calcs
         xyCors <- cross_cor(Y_indx = fixdIndx)
+        #if (calc_full_cor){
+        #  xyCors <- full_xy_cor[ , fixdIndx, drop = FALSE]
+        #} else {
+        #  xyCors <- cor(X, Y[,fixedIndx, drop = FALSE])
+        #}
         y4 <- colSums(X_scaled^4)
         xRowSum <- rowSums(fixdMat)
         xRowSum2 <- tcrossprod(xyCors, fixdMat^2)
@@ -170,18 +180,24 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
         # Calc for dagger 2
         dagger2 <- colSums(xRowSum * t(xRowSum2) * X_scaled)
       }
-
+      
       
     } else {
       
       # Getting indices
       fixdIndx <- match(B, Xindx)
-      fixdMat <- as.matrix(X_scaled[ , fixdIndx, drop = FALSE])
+      fixdMat <- X_scaled[ , fixdIndx, drop = FALSE]
       
       # Calculating the variances
       {
         # General calcs
         xyCors <- t(cross_cor(X_indx=fixdIndx))
+        #if (calc_full_cor){
+        #  xyCors <- full_xy_cor[fixdIndx, , drop = FALSE]
+        #} else {
+        #  xyCors <- cor(X[,fixdIndx, drop = FALSE], Y)
+        #}
+        #xyCors <- t(xyCors)
         y4 <- colSums(Y_scaled^4)
         xRowSum <- rowSums(fixdMat)
         xRowSum2 <- tcrossprod(xyCors, fixdMat^2)
@@ -206,7 +222,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       }
       
     }
-      
+    
     allvars <- (star1 + 0.25 * (star2 + star3 + star4) - dagger1 - dagger2) / 
       (n - 1)
     corsums <- as.vector(rowSums(xyCors))
@@ -255,7 +271,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       stop('only initializeMethod = 3 supported\n')
     }
     
-
+    
   }
   
   update <- function (...) {
@@ -266,12 +282,12 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     if (!updateMethod %in% c(5, 7)) {
       stop('only updateMethod = 5 or 7 supported\n')
     }
-      
+    
   }
   
   #-------------------------------------------------------------------------------
   # Extractions set-up
-
+  
   cat("Beginning method.\n\n")
   
   # Getting node orders
@@ -282,7 +298,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
   
   remainingY <- Yindx[order(cor_Y_to_Xsums, decreasing = TRUE)]
   remainingX <- Xindx[order(cor_X_to_Ysums, decreasing = TRUE)]
-
+  
   # Initializing control variables
   didX <- TRUE
   loopCount <- 0
@@ -291,9 +307,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
   comms <- rep(list(integer(0)), dx + dy)
   initial.sets <- comms
   final.sets <- comms
-  did_it_cycle <- logical(length(comms))
+  did_it_cycle <- logical(dx + dy)
   update_info <- comms
-  nits <- numeric(dy)
+  nits <- numeric(dx + dy)
+  plugged <- logical(dx + dy)
   
   # Making save string
   starttime <- paste0(unlist(strsplit(as.character(starttime), " ", fixed = TRUE)), collapse = "_")
@@ -315,7 +332,12 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     save(testsave, file = fn)
   }
   
+  rm(comms)
+  
   while (length(c(remainingX, remainingY)) > 0) {
+    
+    if (var(c(length(final.sets), length(update_info), length(initial.sets))) != 0)
+      break
     
     cat("\n#-----------------------------------------\n\n")
     loopCount <- loopCount + 1
@@ -349,9 +371,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       
       if (!is.null(saveDir)) {
         # Saving status
-        save(loopCount, comms, initial.sets, final.sets, 
-            OL_count, Dud_count,
-            file = fn)
+        save(loopCount, initial.sets, final.sets, update_info,
+             OL_count, Dud_count,
+             file = fn)
       }
       
       if (Dud_count > Dud_tol)
@@ -384,7 +406,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     } else {
       consec_composition <- NULL
     }
-
+    
     found_cycle <- found_break <- NULL
     mean_jaccards <- NULL ## add all these to update_info
     itCount <- 0
@@ -453,9 +475,6 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
                    "mean jaccard along chain is ", round(mean(jaccards), 3), "\n", sep=""))
       }
       
-      #TODO: store all the "last" jaccards in a vector to be returned
-      
-      
       # Checking for cycles (4.4.1 in CCME paper)
       if (jaccard(B_new, B_old) > 0) { # Otherwise loop will end naturally
         
@@ -478,7 +497,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
           if (sum(seq_pair_jaccards > 0.5) > 0) {# then break needed
             cat(" ---- Break found\n")
             found_break[itCount] <- TRUE
-            B_new <- NULL
+            B_new <- integer(0)
             break
           }
           
@@ -507,7 +526,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       
       B_old <- c(B_oldx, B_oldy)
       chain <- c(chain, list(B_new))
-
+      
     } # From Updates
     
     nits[comm_indx] <- itCount
@@ -515,8 +534,11 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     if (length(B_newx) * length(B_newy) == 0)
       B_new = integer(0)
     
-    comms[[comm_indx]] <- B_new
+    #comms[[comm_indx]] <- B_new
     final.sets[[comm_indx]] <- B_new
+    plugged[comm_indx] <- length(B_new) > 0
+    if (sum(unlist(lapply(final.sets[plugged], length)) == 0) > 0)
+      break
     update_info[[comm_indx]] <- list("mean_jaccards" = mean_jaccards,
                                      "consec_jaccards" = consec_jaccards,
                                      "consec_sizes"= consec_sizes,
@@ -526,23 +548,27 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     remainingX <- setdiff(remainingX, B_new)
     remainingY <- setdiff(remainingY, B_new)
     
-    # Checking overlap with previous sets
-    cat("\nchecking overlap...\n\n")
-    OL_check <- unlist(lapply(comms, function (C) jaccard(B_new, C)))
-    OL_check[is.na(OL_check)] <- 1
-    OL_check[comm_indx] <- 1
-    if (sum(OL_check < 1 - OL_thres) > 0)
-      OL_count <- OL_count + 1
+    if (sum(plugged) > 0) {
+      
+      # Checking overlap with previous sets
+      cat("\nchecking overlap...\n\n")
+      OL_check <- unlist(lapply(final.sets[plugged], function (C) jaccard(B_new, C)))
+      #OL_check[is.na(OL_check)] <- 1
+      OL_check[which(plugged) == comm_indx] <- 1
+      if (sum(OL_check < 1 - OL_thres) > 0)
+        OL_count <- OL_count + 1
+      
+    }
     
-    comm_nodes <- unique(unlist(comms))
+    comm_nodes <- unique(unlist(final.sets))
     cat(paste0(sum(comm_nodes <= dx), " X vertices in communities.\n"))
     cat(paste0(sum(comm_nodes > dx), " Y vertices in communities.\n"))
     
     if (!is.null(saveDir)) {
       # Saving status
-      save(loopCount, chain, comms, initial.sets, final.sets, 
-          OL_count, Dud_count,
-          file = fn)
+      save(loopCount, initial.sets, final.sets, update_info,
+           OL_count, Dud_count,
+           file = fn)
     }
     
     current_time <- proc.time()[3] - start_second
@@ -553,7 +579,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       break
     
   }
-
+  
   #-----------------------------------------------------------------------------
   #  Clean-up and return -------------------------------------------------------
   
@@ -563,10 +589,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
   
   # Removing blanks and trivial sets
   cat("removing overlap and unpacking comms...\n")
-  nonNullIndxs <- which(unlist(lapply(comms, length)) > 0)
+  nonNullIndxs <- which(unlist(lapply(final.sets, length)) > 0)
   if (length(nonNullIndxs) == 0) {
     
-    returnList <- list("communities" = comms,
+    returnList <- list("communities" = NULL,
                        "background" = list("X_bg" = 1:dx,
                                            "Y_bg" = (dx + 1):(dx + dy)),
                        "commzs" = NULL,
@@ -584,12 +610,12 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     
     
   }
-  nonNullComms <- comms[nonNullIndxs]
+  nonNullComms <- final.sets[nonNullIndxs]
   OLfilt <- filter_overlap(nonNullComms, tau = OL_thres, inv.length = inv.length)
   finalComms <- OLfilt$final_comms
   finalIndxs <- nonNullIndxs[OLfilt$kept_comms]
   final_did_it_cycle <- did_it_cycle[finalIndxs]
-
+  
   X_sets <- lapply(finalComms, function (C) C[C <= dx])
   Y_sets <- lapply(finalComms, function (C) C[C > dx])
   X_bg <- setdiff(Xindx, unlist(X_sets))
@@ -611,5 +637,5 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
                      "finalIndxs" = finalIndxs,
                      "nonNullIndxs" = nonNullIndxs)
   return(returnList)
-
+  
 }
