@@ -91,27 +91,29 @@ sim_eQTL_network <- function (par_list, randomizeBeta = TRUE) {
     
     if (bgb == 1) {
       Xbgindxs <- Ybgindxs <- list(1:dbg)
+    } else {
+      breakpointsX <- sort(sample(2:(dbg - 1), bgb - 1, replace = FALSE))
+      breakpointsY <- sort(sample(2:(dbg - 1), bgb - 1, replace = FALSE))
     }
-    breakpointsX <- sort(sample(2:(dbg - 1), bgb - 1, replace = FALSE))
-    breakpointsY <- sort(sample(2:(dbg - 1), bgb - 1, replace = FALSE))
     if (bgb == 2) {
-      Xbgindxs <- c(list(1:breakpoints[1]), 
-                    list(breakpoints[bgb - 1]:dbg))
-      Ybgindxs <- c(list(1:breakpoints[1]), 
-                    list(breakpoints[bgb - 1]:dbg))
+      
+      Xbgindxs <- c(list(1:breakpointsX[1]), 
+                    list(breakpointsX[bgb - 1]:dbg))
+      Ybgindxs <- c(list(1:breakpointsY[1]), 
+                    list(breakpointsY[bgb - 1]:dbg))
     }
     if (bgb > 2) {
       Xbgindxs <- lapply(2:(bgb - 1), 
-                         function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
-      Xbgindxs <- c(list(1:breakpoints[1]), 
+                         function (i) breakpointsX[i - 1]:(breakpointsX[i] - 1))
+      Xbgindxs <- c(list(1:breakpointsX[1]), 
                     Xbgindxs, 
-                    list(breakpoints[bgb - 1]:dbg))
+                    list(breakpointsX[bgb - 1]:dbg))
       
       Ybgindxs <- lapply(2:(bgb - 1), 
-                         function (i) breakpoints[i - 1]:(breakpoints[i] - 1))
-      Ybgindxs <- c(list(1:breakpoints[1]), 
+                         function (i) breakpointsY[i - 1]:(breakpointsY[i] - 1))
+      Ybgindxs <- c(list(1:breakpointsY[1]), 
                     Ybgindxs, 
-                    list(breakpoints[bgb - 1]:dbg))
+                    list(breakpointsY[bgb - 1]:dbg))
     }
     
     # Getting intracorrs

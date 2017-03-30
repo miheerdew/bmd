@@ -64,10 +64,7 @@ for (exper in run_expers) {
         timer <- proc.time()[3]
         resultsXY <- run_brim(sim$X, sim$Y, alpha = alpha)
         timer <- proc.time()[3] - timer
-        results <- resultsXY[[1]]
-        save(results, timer, file = file.path(curr_dir_p_rep, "brimX.RData"))
-        results <- resultsXY[[2]]
-        save(results, timer, file = file.path(curr_dir_p_rep, "brimY.RData"))
+        save(results, timer, file = file.path(curr_dir_p_rep, "brim.RData"))
       }
       
       # Running IRCC-kmeans
