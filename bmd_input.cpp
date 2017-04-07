@@ -4,17 +4,59 @@ using namespace arma;
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppArmadillo)]]
 
+uvec bh_reject(vec pvals, double alpha, bool conserv){
+  uint m = pvals.n_elem;
+
+  if(conserv) {
+    double mults = 0;
+    for(int j = 1; j <= m; j++) {
+      mults += 1.0/j ;
+    }
+    alpha = alpha/mults;
+  }
+
+  vec sorted = sort(pvals);
+
+  int j;
+  for(j = m; j > 0; j--){
+    if(sorted(j-1) <= alpha*j/m) break;
+  }
+
+  if(j==0){
+    return uvec();
+  } else {
+    return(find(pvals <= alpha*j/m));
+  }
+}
+
+// [[Rcpp::export]]
+Rcpp::IntegerVector bh_rejectC(vec pvals, double alpha, bool conserv = true){
+  return Rcpp::wrap(bh_reject(pvals, alpha, conserv)+1);
+}
 
 class BmdInput {
 
-  public:
+public:
+  const mat X, Y, cormat;
+  unsigned dx, dy, n;
+  const double alpha;
 
-  BmdInput(mat X_scaled, mat Y_scaled) :
+private:
+  const mat X2, X3, Y2, Y3; //ORDER DEPENDECY
+  const rowvec X4sum, Y4sum;
+
+public:
+
+  BmdInput(mat X_scaled, mat Y_scaled, double alpha_=0.05) :
     X(X_scaled), Y(Y_scaled),
+    X2(pow(X,2)), X3(pow(X,3)), X4sum(sum(pow(X,4))),
+    Y2(pow(Y,2)), Y3(pow(Y,3)), Y4sum(sum(pow(Y,4))),
     dx(X_scaled.n_cols),
     dy(Y_scaled.n_cols),
     n(X_scaled.n_rows),
-    cormat(cor(X_scaled, Y_scaled))
+    //TODO: Compute cormat only as required.
+    cormat(cor(X_scaled, Y_scaled)),
+    alpha(alpha_)
     {};
 
   Rcpp::NumericMatrix cross_cors(uvec A, uvec B){
@@ -22,9 +64,9 @@ class BmdInput {
     return Rcpp::wrap(ret);
   }
 
-  Rcpp::NumericVector vars_wrapper(uvec A, bool test_x){
-    rowvec ret = vars(A-1,test_x);
-    return Rcpp::wrap(ret);
+  Rcpp::NumericVector vars_wrap(uvec A, bool test_x){
+    set_sides(A-1, test_x);
+    return Rcpp::wrap(vars());
   }
 
   Rcpp::NumericMatrix get_X(){
@@ -35,85 +77,84 @@ class BmdInput {
     return Rcpp::wrap(Y);
   }
 
-protected :
-  inline rowvec ri4(){
-    return sum(pow(*first,4));
+  Rcpp::NumericVector pvals_wrap(uvec A, bool test_x){
+    set_sides(A-1, test_x);
+    return Rcpp::wrap(pvals());
   }
 
-  inline rowvec rjjhh(uword j, uword h){
-    double val = as_scalar(sum(square(second->col(j) % second->col(h))));
-    rowvec ret(first->n_cols);
-    ret.fill(val);
-    return ret;
+  Rcpp::IntegerVector update_wrap(uvec A, bool test_x, bool conserv){
+    return Rcpp::wrap(update(A-1,test_x, conserv)+1);
   }
 
-  inline rowvec riijh(uword j, uword h){
-    mat sq = square(*first);
-    return sum(sq.each_col() % (second->col(j) % second->col(h)) );
+  Rcpp::IntegerVector init_wrap(uint u, bool test_x, bool conserv){
+    return Rcpp::wrap(init(u-1, test_x, conserv)+1);
   }
 
-  inline rowvec ri3j(uword j){
-    mat f3 = pow(*first,3);
-    return sum(f3.each_col() % second->col(j));
+  uvec update(uvec A, bool test_x, bool conserv){
+    set_sides(A, test_x);
+    return bh_reject(pvals(), alpha, conserv);
   }
 
-  inline rowvec rijjh(uword j, uword h){
-    return sum( first->each_col() %
-                ( square(second->col(j)) % second->col(h) )
-              );
-  }
-
-  inline rowvec r(uword j){
-    rowvec res;
-    if(test_x){
-      res = cormat.col(j).t();
+  uvec init(uint u, bool test_x, bool conserv){
+    vec cors;
+    if (test_x) {
+      cors = cormat.col(u);
     } else {
-      res = cormat.row(j);
+      cors = cormat.row(u).t();
     }
-    return res;
+    vec pvalues = atanh(cors)*sqrt(n-3); //fischer transform
+    pvalues.transform([](double stat) {return R::pnorm(stat,0,1,false,false);});
+    return bh_reject(pvalues, alpha, conserv);
   }
 
-  inline rowvec cov_rij_rih(uword j, uword h){
-    //See Steiger and Hakstian 1982 equation (5.1) (with k=i)
-    return
-      (riijh(j, h) +
-      0.25*r(j)%r(h)%( ri4() + riijh(j,j) + riijh(h,h) + rjjhh(j,h) )
-      - 0.5*r(j)%( ri3j(h) + rijjh(j, h))
-      - 0.5*r(h)%( ri3j(j) + rijjh(h, j)))/(n-1);
+protected :
+  mat first, f2, f3, f4sum, second, cross;
+  vec corsums;
+
+  vec pvals(){
+    vec pvals = sqrt(n) * corsums / sqrt(vars());
+    pvals.transform([](double zstat) {return R::pnorm(zstat,0,1,false,false);});
+    return pvals;
   }
 
-  rowvec vars(uvec B, bool test_x){
-    set_sides(test_x);
-    rowvec res((*first).n_cols, fill::zeros);
-    for(uword j : B){
-      for(uword h: B){
-        res += cov_rij_rih(j,h);
-      }
+  void set_sides(uvec B, bool test_x){
+    if (test_x){
+      cross = cormat.cols(B);
+      first = X; f2 = X2; f3=X3; f4sum = X4sum;
+      second = Y.cols(B);
+    } else {
+      cross = cormat.rows(B).t();
+      first = Y; f2 = Y2; f3=Y3; f4sum = Y4sum;
+      second = X.cols(B);
     }
-    return res;
+    corsums = sum(cross, 1);
   }
 
-public:
-  const mat X, Y, cormat;
-  unsigned dx, dy, n;
+  vec vars(){
+    vec sRowSum = sum(second, 1); // n x 1
+    mat sRowSum2 = cross * pow(second,2).t(); // p x n
+    vec star1 = f2.t() * pow(sRowSum,2); // p x 1
+    vec star2 = f4sum.t() % pow(corsums,2); //p x 1
+    vec star3 = 2 * corsums % sum(f2 % sRowSum2.t()).t(); // p x 1
+    vec star4 = sum(pow(sRowSum2,2),1); // p x 1
+    vec dagger1 = corsums % (f3.t() * sRowSum); // p x 1
 
-private:
-  const mat* first;
-  const mat* second;
-  bool test_x;
+    mat aux = first % sRowSum2.t(); // n x p
+    rowvec dagger2 = sum(aux.each_col() % sRowSum); // 1 x p
 
-  void set_sides(bool test_x_){
-    test_x  = test_x_;
-    first = (test_x) ? &X : &Y;
-    second = (test_x) ? &Y : &X;
+    return (star1 + 0.25 * (star2 + star3 + star4) - dagger1 - dagger2.t()) / (n - 1);
   }
+
 };
 
 RCPP_MODULE(yada) {
  Rcpp::class_<BmdInput>( "BmdInput" )
     .constructor<mat,mat>()
     .method("cross_cors", &BmdInput::cross_cors)
-    .method("vars", &BmdInput::vars_wrapper)
+    .method("vars", &BmdInput::vars_wrap)
+    .method("pvals", &BmdInput::pvals_wrap)
+    .method("init", &BmdInput::init_wrap)
+    .method("update", &BmdInput::update_wrap)
     .field_readonly( "n", &BmdInput::n)
     .field_readonly( "dx", &BmdInput::dx)
     .field_readonly( "dy", &BmdInput::dy)

@@ -1,3 +1,3 @@
 library(testthat)
 
-test_results <- test_dir("tests/", reporter = "summary")
+test_results <- test_dir("~/Dev/bmd/tests/", reporter = "summary")
