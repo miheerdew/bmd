@@ -37,7 +37,8 @@ Rcpp::IntegerVector bh_rejectC(vec pvals, double alpha, bool conserv = true){
 class BmdInput {
 
 public:
-  const mat X, Y, cormat;
+  const mat X, Y;
+  mat cormat;
   unsigned dx, dy, n;
   const double alpha;
 
@@ -54,10 +55,11 @@ public:
     dx(X_scaled.n_cols),
     dy(Y_scaled.n_cols),
     n(X_scaled.n_rows),
-    //TODO: Compute cormat only as required.
-    cormat(cor(X_scaled, Y_scaled)),
     alpha(alpha_)
-    {};
+    {
+      Rprintf("Computing cross-correlation matrix\n");
+      cormat = cor(X_scaled, Y_scaled);
+    };
 
   Rcpp::NumericMatrix cross_cors(uvec A, uvec B){
     mat ret = cormat.submat(A-1,B-1);
