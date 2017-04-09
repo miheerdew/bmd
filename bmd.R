@@ -120,14 +120,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
   Yindx <- (dx + 1):(dx + dy)
 
   pvals <- function(A, test_x) {
-    if (test_x) {
-      corsums <- as.vector(rowSums(inp$cross_cors(1:dx, A)))
-    } else {
-      corsums <- as.vector(colSums(inp$cross_cors(A, 1:dy)))
-    }
-    vars <- inp$vars(A, test_x)
-    zstats <- sqrt(n) * corsums / sqrt(vars)
-    return(pnorm(zstats, lower.tail = FALSE))
+    return(inp$pvals(A, test_x))
   }
 
   update5 <- function (B, A = NULL) {
