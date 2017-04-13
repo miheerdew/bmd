@@ -19,11 +19,13 @@ source("sim_eQTL_network.R")
 source("best_match.R")
 
 # Set method names:
-methNames <- c("bmd", "kmeans", "brim")
+#methNames <- c("bmd", "kmeans", "brim")
+methNames <- c("bmd", "bmd_cpp")
 
 # Set which methods to plot and their plot names
-plot_meths <- c(1:3)
-plot_names <- c("BMD", "k-means", "BRIM")
+plot_meths <- c(1, 2)
+#plot_names <- c("BMD", "k-means", "BRIM", "BMD-cpp")
+plot_names <- c("BMD", "BMD-cpp")
 
 # Set points
 pchs <- c(14, 8, 3, 22, 24, 21)
@@ -35,7 +37,7 @@ getResults <- TRUE
 main_text_plot <- FALSE
 
 # This should consistent throughout the experiments
-nreps <- 50
+nreps <- 10
 
 # Brewing colors
 colPal <- brewer.pal(9, "Set1")

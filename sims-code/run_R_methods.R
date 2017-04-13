@@ -2,18 +2,20 @@ run_expers <- sapply(commandArgs(TRUE), as.numeric)
 
 source("sim_eQTL_network.R")
 source("bmd.R")
+source("bmd_cpp.R")
 source("run_brim.R")
 source("ircc.R")
 total_expers <- readLines("sims-results/exper-names.txt")
 
+runBMDcpp <- TRUE
 runBMD2 <- FALSE
-runBMD <- FALSE
-runBRIM <- TRUE
-runkmeans <- TRUE
+runBMD <- TRUE
+runBRIM <- FALSE
+runkmeans <- FALSE
 
 # This should consistent throughout the experiments
 # (and match the same variable in sims/lfr/make_lfr_sims.R)
-nreps <- 50
+nreps <- 10
 
 for (exper in run_expers) {
   
@@ -38,6 +40,16 @@ for (exper in run_expers) {
     
       curr_dir_p_rep <- file.path(curr_dir_p, rep)
       load(file.path(curr_dir_p_rep, "sim.RData"))
+      
+      # Running BMDcpp
+      if (runBMDcpp) {
+        timer <- proc.time()[3]
+        results <- bmd_cpp(sim$X, sim$Y, alpha = alpha,
+                           updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
+                           calc_full_cor = TRUE, updateMethod = 5)
+        timer <- proc.time()[3] - timer
+        save(results, timer, file = file.path(curr_dir_p_rep, "bmd_cpp.RData"))
+      }
       
       # Running BMD2
       if (runBMD2) {

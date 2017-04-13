@@ -7,7 +7,7 @@ total_expers <- readLines("sims-results/exper-names.txt")
 redrawSeeds <- FALSE
 
 # This should consistent throughout the experiments
-nreps <- 50
+nreps <- 10
 
 for (exper in run_expers) {
   
