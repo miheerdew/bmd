@@ -171,7 +171,7 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
   
   extract <- function (indx, interact = FALSE, print_output = verbose) {
     
-    if (interact && indx %in% clustered || stop_extracting) return(integer(0))
+    if (interact && (indx %in% clustered || stop_extracting)) return(integer(0))
     
     if (print_output && interact) {
       cat("\n#-----------------------------------------\n\n")
@@ -184,7 +184,7 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
       
     B0x <- initialize(indx)
     if (length(B0x) <= 1) {
-      Dud_count <<- Dud_count + 1
+      if (interact) Dud_count <<- Dud_count + 1
       return(integer(0))
     }
     B0y <- update5(B0x, comm_indx)

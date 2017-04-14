@@ -4,21 +4,19 @@ source("makeVars.R")
 source("stdize.R")
 #sourceCpp("correlation.cpp")
 
-bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL, cp_cor = TRUE,
+bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, verbose = TRUE,
                  updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
                  updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1,
-                 bmd_index=NULL, calc_full_cor=FALSE, loop_limit = Inf) {
-  # bmd_index : A function that maps each vertex to the index of the bimodule
-  #           it contains.
-  
+                 calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE) {
+
   if (FALSE) {
     alpha = 0.05
     OL_thres = 0.9
     tag = NULL
-    saveDir = NULL
+    verbose = TRUE
     OL_tol = Inf
     Dud_tol = Inf
-    time_limit = 18000
+    time_limit = Inf
     updateMethod = 5
     initializeMethod = 3
     updateOutput = TRUE
@@ -28,13 +26,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     loop_limit = Inf
     add_rate = 1
     calc_full_cor=TRUE
-    bmd_index=NULL
+    parallel = FALSE
   }
-  
+
   start_second <- proc.time()[3]
-  starttime <- Sys.time()
-  if (!is.null(saveDir) && !dir.exists(saveDir))
-    dir.create(saveDir)
   
   
   #-------------------------------------------------------------------------------
@@ -285,142 +280,45 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
     
   }
   
-  #-------------------------------------------------------------------------------
-  # Extractions set-up
+  #-----------------------------------------------------------------------------
+  # Extract function
   
-  cat("Beginning method.\n\n")
-  
-  # Getting node orders
-  Ysum <- Y_scaled %*% rep(1,dy)
-  Xsum <- X_scaled %*% rep(1,dx)
-  cor_X_to_Ysums <- as.vector(t(Ysum) %*% X_scaled)
-  cor_Y_to_Xsums <- as.vector(t(Xsum) %*% Y_scaled)
-  
-  remainingY <- Yindx[order(cor_Y_to_Xsums, decreasing = TRUE)]
-  remainingX <- Xindx[order(cor_X_to_Ysums, decreasing = TRUE)]
-  
-  # Initializing control variables
-  didX <- TRUE
-  loopCount <- 0
-  OL_count <- 0
-  Dud_count <- 0
-  comms <- rep(list(integer(0)), dx + dy)
-  initial.sets <- comms
-  final.sets <- comms
-  did_it_cycle <- logical(dx + dy)
-  update_info <- comms
-  nits <- numeric(dx + dy)
-  plugged <- logical(dx + dy)
-  
-  # Making save string
-  starttime <- paste0(unlist(strsplit(as.character(starttime), " ", fixed = TRUE)), collapse = "_")
-  starttime <- gsub(":", "-", starttime)
-  
-  if (!is.null(saveDir)) {
-    if (!is.null(tag)) {
-      fn <- file.path(saveDir, paste0(tag, ".RData"))
-    } else {
-      fn <- file.path(saveDir, paste0("unnamed", starttime, ".RData"))
+  extract <- function (indx, interact = FALSE, print_output = verbose) {
+    
+    if (interact && (indx %in% clustered || stop_extracting)) return(integer(0))
+    
+    if (print_output && interact) {
+      cat("\n#-----------------------------------------\n\n")
+      cat("extraction", which(extractord == indx), "of", length(extractord), "\n\n")
+      cat("OL_count = ", OL_count, "\n")
+      cat("Dud_count = ", Dud_count, "\n")
+      cat(paste0(sum(clustered <= dx), " X vertices in communities.\n"))
+      cat(paste0(sum(clustered > dx), " Y vertices in communities.\n"))
     }
-  }
-  
-  if (!is.null(saveDir)) {
-    cat("doing test save\n")
-    cat("fn is", fn, "\n")
-    # Test save
-    testsave <- "testsave"
-    save(testsave, file = fn)
-  }
-  
-  rm(comms)
-  
-  while (length(c(remainingX, remainingY)) > 0) {
-    
-    if (var(c(length(final.sets), length(update_info), length(initial.sets))) != 0)
-      break
-    
-    cat("\n#-----------------------------------------\n\n")
-    loopCount <- loopCount + 1
-    cat("loopCount", loopCount, "\n\n")
-    cat("length remainingX = ", length(remainingX), "\n")
-    cat("length remainingY = ", length(remainingY), "\n")
-    cat("OL_count = ", OL_count, "\n")
-    cat("Dud_count = ", Dud_count, "\n")
-    
-    # Initializing
-    if (length(remainingX) == 0 || didX & length(remainingY) > 0) {
-      comm_indx <- remainingY[1]
-      remainingY <- remainingY[-1]
-      didX <- FALSE
-      comm_indxY <- which(Yindx == comm_indx)
-      cat("comm_starter = ", comm_indx, "(Y =", paste0(comm_indxY, ")"), "\n")
-    } else {
-      comm_indx <- remainingX[1]
-      remainingX <- remainingX[-1]
-      didX <- TRUE
-      comm_indxX <- which(Xindx == comm_indx)
-      cat("comm_starter = ", comm_indx, "(X =", paste0(comm_indxX, ")"), "\n")
-    }
-    
-    
-    # Update 0
-    cat("getting, checking initial sets\n")
-    B0x <- initialize(comm_indx)
+      
+    B0x <- initialize(indx)
     if (length(B0x) <= 1) {
-      Dud_count <- Dud_count + 1
-      
-      if (!is.null(saveDir)) {
-        # Saving status
-        save(loopCount, initial.sets, final.sets, update_info,
-             OL_count, Dud_count,
-             file = fn)
-      }
-      
-      if (Dud_count > Dud_tol)
-        break
-      next
+      if (interact) Dud_count <<- Dud_count + 1
+      return(integer(0))
     }
-    if (updateMethod == 7) {
-      B0y <- update5(B0x, comm_indx)
-    } else {
-      B0y <- update(B0x, comm_indx)
-    }
-    
-    # Removing B0 from remaining
-    if (throwInitial) {
-      remainingX <- setdiff(remainingX, c(B0x, B0y))
-      remainingY <- setdiff(remainingY, c(B0x, B0y))
-    }
-    
-    # Initializing update loop
-    B_oldx <- B0x
-    B_oldy <- B0y
+    B0y <- update5(B0x, comm_indx)
+
+    # Initializing extraction loop
+    B_oldx <- B0x; B_oldy <- B0y
     B_old <- c(B_oldx, B_oldy)
-    initial.sets[[comm_indx]] <- B_old
+    initial_set <- B_old
     B_new <- c(Xindx, Yindx)
     chain <- list(B_old)
-    consec_jaccards <- NULL
+    consec_jaccards <- mean_jaccards <- NULL
     consec_sizes <- list(c(length(B_oldx), length(B_oldy)))
-    if(is.function(bmd_index)){
-      consec_composition <- list(table(sapply(B_old,bmd_index)))
-    } else {
-      consec_composition <- NULL
-    }
-    
-    found_cycle <- found_break <- NULL
-    mean_jaccards <- NULL ## add all these to update_info
+    found_cycle <- found_break <- cycledSets <- NULL
+    did_it_cycle <- FALSE
     itCount <- 0
-    cycledSets <- NULL
-    if (updateOutput) {
-      cat(paste0("Initial set ",
-                 "is size ", length(B_old), 
-                 " (", length(B_oldx), ", ", length(B_oldy), ")\n\n", sep=""))
-    }
-    
+
     repeat {
-      
+
       itCount <- itCount + 1
-      
+
       if (updateMethod != 7) {
         B_newx <- update(B_oldy, B_oldx)
         if (length(B_newx) >= 1) {
@@ -430,32 +328,32 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
           break
         }
         B_new <- c(B_newx, B_newy)
-        
+
         if (length(B_newy) == 0)
           break
       } else {
-        
+
         if (comm_indx > dx) {
-          Xpvals <- update5(B_oldy, justpvals = TRUE)
-          Ypvals <- update5(B_oldx, justpvals = TRUE)
+          Xpvals <- pvals(B_oldy)
+          Ypvals <- pvals(B_oldx)
           B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
           B_newx <- B_new[B_new <= dx]
           B_newy <- B_new[B_new > dx]
         } else {
-          Xpvals <- update5(B_oldx, justpvals = TRUE)
-          Ypvals <- update5(B_oldy, justpvals = TRUE)
+          Xpvals <- pvals(B_oldx)
+          Ypvals <- pvals(B_oldy)
           B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
           B_newx <- B_new[B_new > dx]
           B_newy <- B_new[B_new <= dx]
         }
-        
+
         if (length(B_newy) * length(B_newx) == 0) {
           B_newy <- B_newx <- integer(0)
           break
         }
-        
+
       }
-      
+
       consec_jaccard <- jaccard(B_new, B_old)
       jaccards <- unlist(lapply(chain, function (B) jaccard(B, B_new)))
       found_cycle <- c(found_cycle, FALSE)
@@ -463,32 +361,21 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
       consec_jaccards <- c(consec_jaccards, consec_jaccard)
       mean_jaccards <- c(mean_jaccards, mean(jaccards))
       consec_sizes <- c(consec_sizes, list(c(length(B_newx), length(B_newy))))
-      if(is.function(bmd_index)){
-        consec_composition <- c(consec_composition,
-                                list(table(sapply(B_new, bmd_index))))
-      }
-      if (updateOutput) {
-        cat(paste0("Update ", itCount, 
-                   " is size ", length(B_new), 
-                   " (", length(B_newx), ", ", length(B_newy), "), ",
-                   "jaccard to last is ", round(consec_jaccard, 3), ", ",
-                   "mean jaccard along chain is ", round(mean(jaccards), 3), "\n", sep=""))
-      }
-      
+
       # Checking for cycles (4.4.1 in CCME paper)
       if (jaccard(B_new, B_old) > 0) { # Otherwise loop will end naturally
-        
+
         if (sum(jaccards == 0) > 0) { # Cycle has been found
-          
+
           found_cycle[itCount] <- TRUE
-          did_it_cycle[comm_indx] <- TRUE
-          
+          did_it_cycle <- TRUE
+
           if (updateOutput)
             cat("---- Cycle found")
-          
+
           Start <- max(which(jaccards == 0))
           cycle_chain <- chain[Start:length(chain)]
-          
+
           # Checking for cycle break (4.4.1a)
           seq_pair_jaccards <- rep(0, length(cycle_chain) - 1)
           for (j in seq_along(seq_pair_jaccards)) {
@@ -500,7 +387,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
             B_new <- integer(0)
             break
           }
-          
+
           # Create conglomerate set (and check, 4.4.1b)
           B_J <- unique(unlist(cycle_chain))
           B_J_check <- unlist(lapply(chain, function (B) jaccard(B_J, B)))
@@ -512,130 +399,130 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, saveDir = NULL,
             B_oldx <- B_J[B_J <= dx]
             B_oldy <- B_J[B_J > dx]
           }
-          
+
         } else {
           # From checking jaccards to cycle_chain; if not, then can set B_oldx
           # and B_oldy to the update and restart.
           B_oldx <- B_newx
           B_oldy <- B_newy
         }
-        
+
       } else { # From checking B_new to B_old; if not, B_new = B_old and:
         break
       }
-      
+
       B_old <- c(B_oldx, B_oldy)
       chain <- c(chain, list(B_new))
-      
-    } # From Updates
-    
-    nits[comm_indx] <- itCount
-    
+
+    }
+
+    # Storing B_new and collecting update info
     if (length(B_newx) * length(B_newy) == 0)
-      B_new = integer(0)
-    
-    #comms[[comm_indx]] <- B_new
-    final.sets[[comm_indx]] <- B_new
-    plugged[comm_indx] <- length(B_new) > 0
-    if (sum(unlist(lapply(final.sets[plugged], length)) == 0) > 0)
-      break
-    update_info[[comm_indx]] <- list("mean_jaccards" = mean_jaccards,
-                                     "consec_jaccards" = consec_jaccards,
-                                     "consec_sizes"= consec_sizes,
-                                     "consec_composition"=consec_composition,
-                                     "found_cycle" = found_cycle,
-                                     "found_break" = found_break)
-    remainingX <- setdiff(remainingX, B_new)
-    remainingY <- setdiff(remainingY, B_new)
-    
-    if (sum(plugged) > 0) {
-      
-      # Checking overlap with previous sets
-      cat("\nchecking overlap...\n\n")
-      OL_check <- unlist(lapply(final.sets[plugged], function (C) jaccard(B_new, C)))
-      #OL_check[is.na(OL_check)] <- 1
-      OL_check[which(plugged) == comm_indx] <- 1
+      B_new <- integer(0)
+    if (interact) final.sets[[indx]] <<- B_new
+    update_info <- list("mean_jaccards" = mean_jaccards, 
+                        "consec_jaccards" = consec_jaccards,
+                        "consec_sizes"= consec_sizes,
+                        "found_cycle" = found_cycle,
+                        "found_break" = found_break)
+    if (interact) clustered <<- union(clustered, B_new)
+
+    # Checking overlap with previous sets
+    if (interact && sum(plugged) > 0) {
+      OL_check <- unlist(lapply(final.sets[plugged], 
+                                function (C) jaccard(B_new, C)))
       if (sum(OL_check < 1 - OL_thres) > 0)
-        OL_count <- OL_count + 1
-      
+        OL_count <<- OL_count + 1
     }
     
-    comm_nodes <- unique(unlist(final.sets))
-    cat(paste0(sum(comm_nodes <= dx), " X vertices in communities.\n"))
-    cat(paste0(sum(comm_nodes > dx), " Y vertices in communities.\n"))
-    
-    if (!is.null(saveDir)) {
-      # Saving status
-      save(loopCount, initial.sets, final.sets, update_info,
-           OL_count, Dud_count,
-           file = fn)
-    }
-    
+    # Noting which final.sets are filled; doing checks
+    if (interact) plugged[indx] <<- length(B_new) > 0
     current_time <- proc.time()[3] - start_second
-    if (current_time > time_limit)
-      break
+    if (interact && current_time > time_limit || Dud_count > Dud_tol || OL_count > OL_tol)
+      stop_extracting <<- TRUE
     
-    if (OL_count > OL_tol)
-      break
-    
+    return(list("StableComm" = B_new,
+                "update_info" = update_info,
+                "initial_set" = initial_set,
+                "itCount" = itCount, "did_it_cycle" = did_it_cycle,
+                "current_time" = current_time))
   }
   
+  
+  #-------------------------------------------------------------------------------
+  # Extractions
+
+  cat("Beginning method.\n\n")
+
+  # Getting node orders. Remember inp$X, inp$Y are scaled.
+  Ysum <- Y_scaled %*% rep(1,dy) / dy
+  Xsum <- X_scaled %*% rep(1,dx) / dx
+  cor_X_to_Ysums <- as.vector(t(Ysum) %*% X_scaled)
+  cor_Y_to_Xsums <- as.vector(t(Xsum) %*% Y_scaled)
+  
+  extractord <- c(Xindx, Yindx)[order(c(cor_X_to_Ysums, cor_Y_to_Xsums),
+                                      decreasing = TRUE)]
+
+  # Initializing control variables
+  clustered <- integer(0)
+  stop_extracting <- FALSE
+  plugged <- logical(dx + dy)
+  OL_count <- 0
+  Dud_count <- 0
+  final.sets <- rep(list(integer(0)), length(extractord))
+  
+  # Extracting
+  if (parallel) {
+    no_cores <- detectCores() - 1
+    cl <- makeCluster(no_cores)
+    registerDoParallel(cl)
+    extract_res <- foreach(i = extractord, .combine='c') %dopar% {
+      extract(i, interact = TRUE, print_output = FALSE)
+    }
+    stopCluster(cl)
+  } else {
+    extract_res <- lapply(extractord, extract, interact = TRUE)
+    extract_res <- extract_res[order(extractord)]
+  }
+
   #-----------------------------------------------------------------------------
   #  Clean-up and return -------------------------------------------------------
-  
-  endtime <- Sys.time()
-  report <- list(loopCount, OL_count, Dud_count, starttime, endtime)
-  names(report) <- c("loopCount", "OL_count", "Dud_count", "starttime", "endtime")
-  
+
+  endtime <- proc.time()[3]
+  report <- list(OL_count, Dud_count, endtime - start_second)
+  names(report) <- c("OL_count", "Dud_count", "timer")
+
   # Removing blanks and trivial sets
   cat("removing overlap and unpacking comms...\n")
   nonNullIndxs <- which(unlist(lapply(final.sets, length)) > 0)
   if (length(nonNullIndxs) == 0) {
-    
-    returnList <- list("communities" = NULL,
-                       "background" = list("X_bg" = 1:dx,
-                                           "Y_bg" = (dx + 1):(dx + dy)),
-                       "commzs" = NULL,
-                       "initial.sets" = initial.sets, 
+    returnList <- list("communities" = list("X_sets" = NULL,
+                                            "Y_sets" = NULL),
+                       "background" = 1:(dx + dy),
+                       "extract_res" = extract_res,
+                       "finalIndxs" = integer(0),
                        "final.sets" = final.sets,
-                       "nits" = nits,
-                       "report" = report,
-                       "communities_before_OLfilt" = NULL,
-                       "OLfilt" = NULL,
-                       "did_it_cycle" = NULL,
-                       "update_info" = update_info,
-                       "finalIndxs" = NULL,
-                       "nonNullIndxs" = nonNullIndxs)
+                       "report" = report)
     return(returnList)
-    
-    
   }
   nonNullComms <- final.sets[nonNullIndxs]
   OLfilt <- filter_overlap(nonNullComms, tau = OL_thres, inv.length = inv.length)
   finalComms <- OLfilt$final_comms
   finalIndxs <- nonNullIndxs[OLfilt$kept_comms]
-  final_did_it_cycle <- did_it_cycle[finalIndxs]
-  
+
   X_sets <- lapply(finalComms, function (C) C[C <= dx])
   Y_sets <- lapply(finalComms, function (C) C[C > dx])
   X_bg <- setdiff(Xindx, unlist(X_sets))
   Y_bg <- setdiff(Yindx, unlist(Y_sets))
-  final_ncomms <- length(X_sets)
-  
+
   returnList <- list("communities" = list("X_sets" = X_sets,
                                           "Y_sets" = Y_sets),
                      "background" = list("X_bg" = X_bg,
                                          "Y_bg" = Y_bg),
-                     "initial.sets" = initial.sets, 
-                     "final.sets" = final.sets,
-                     "nits" = nits,
-                     "report" = report,
-                     "communities_before_OLfilt" = nonNullComms,
-                     "OLfilt" = OLfilt,
-                     "did_it_cycle" = final_did_it_cycle,
-                     "update_info" = update_info,
+                     "extract_res" = extract_res[finalIndxs],
                      "finalIndxs" = finalIndxs,
-                     "nonNullIndxs" = nonNullIndxs)
+                     "final.sets" = final.sets,
+                     "report" = report)
   return(returnList)
   
 }
