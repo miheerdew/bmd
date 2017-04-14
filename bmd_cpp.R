@@ -1,4 +1,6 @@
 library(Rcpp)
+library(doParallel)
+library(foreach)
 source("makeVars.R")
 source("stdize.R")
 sourceCpp("bmd_input.cpp")
@@ -6,7 +8,7 @@ sourceCpp("bmd_input.cpp")
 bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, verbose = TRUE,
                      updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
                      updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1,
-                     calc_full_cor=FALSE, loop_limit = Inf) {
+                     calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE) {
 
   if (FALSE) {
     alpha = 0.05
@@ -25,6 +27,7 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
     loop_limit = Inf
     add_rate = 1
     calc_full_cor=TRUE
+    parallel = FALSE
   }
 
   start_second <- proc.time()[3]
@@ -166,11 +169,11 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
   #-----------------------------------------------------------------------------
   # Extract function
   
-  extract <- function (indx, interact = FALSE) {
+  extract <- function (indx, interact = FALSE, print_output = verbose) {
     
     if (interact && indx %in% clustered || stop_extracting) return(integer(0))
     
-    if (verbose && interact) {
+    if (print_output && interact) {
       cat("\n#-----------------------------------------\n\n")
       cat("extraction", which(extractord == indx), "of", length(extractord), "\n\n")
       cat("OL_count = ", OL_count, "\n")
@@ -354,8 +357,18 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
   final.sets <- rep(list(integer(0)), length(extractord))
   
   # Extracting
-  extract_res <- lapply(extractord, extract, interact = TRUE)
-  extract_res <- extract_res[order(extractord)]
+  if (parallel) {
+    no_cores <- detectCores() - 1
+    cl <- makeCluster(no_cores)
+    registerDoParallel(cl)
+    extract_res <- foreach(i = extractord, .combine='c') %dopar% {
+      extract(i, interact = TRUE, print_output = FALSE)
+    }
+    stopCluster(cl)
+  } else {
+    extract_res <- lapply(extractord, extract, interact = TRUE)
+    extract_res <- extract_res[order(extractord)]
+  }
 
   #-----------------------------------------------------------------------------
   #  Clean-up and return -------------------------------------------------------
