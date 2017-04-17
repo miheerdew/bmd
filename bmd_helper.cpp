@@ -4,8 +4,8 @@ using namespace arma;
 // [[Rcpp::depends(RcppArmadillo)]]
 
 
-uvec bh_reject(const vec &pvals, double alpha, bool conserv){
-  uint m = pvals.n_elem;
+uvec bh_reject0(const vec &pvals, double alpha, bool conserv){
+  int m = pvals.n_elem;
 
   if(conserv) {
     double mults = 0;
@@ -56,15 +56,15 @@ vec pvals(const mat& first,
   return pvals;
 }
 
-uvec initialize(uint n, const vec& cors, float alpha, bool conserv){
+uvec initialize(int n, const vec& cors, float alpha, bool conserv){
   vec pvalues = atanh(cors)*sqrt(n-3); //fischer transform
   pvalues.transform([](double stat) {return R::pnorm(stat,0,1,false,false);});
-  return bh_reject(pvalues, alpha, conserv);
+  return bh_reject0(pvalues, alpha, conserv);
 }
 
 
 // [[Rcpp::export]]
-Rcpp::IntegerVector initializeC(uint n, const vec& cors, float alpha, bool conserv){
+Rcpp::IntegerVector initializeC(int n, const vec& cors, float alpha, bool conserv){
   uvec res = initialize(n, cors, alpha, conserv);
   res += 1;
   return Rcpp::IntegerVector(res.begin(), res.end());
@@ -72,7 +72,7 @@ Rcpp::IntegerVector initializeC(uint n, const vec& cors, float alpha, bool conse
 
 // [[Rcpp::export]]
 Rcpp::IntegerVector bh_rejectC(const vec &pvals, double alpha, bool conserv){
-  uvec res = bh_reject(pvals, alpha, conserv);
+  uvec res = bh_reject0(pvals, alpha, conserv);
   res += 1;
   return Rcpp::IntegerVector(res.begin(), res.end());
 }
@@ -86,7 +86,7 @@ Rcpp::IntegerVector updateC(const mat& first,
                             const mat& cross,
                             float alpha,
                             bool conserv){
-  uvec res = bh_reject(pvals(first, second, f4ColSums, f2, f3, cross), alpha, conserv);
+  uvec res = bh_reject0(pvals(first, second, f4ColSums, f2, f3, cross), alpha, conserv);
   res += 1;
   return Rcpp::IntegerVector(res.begin(), res.end());
   }
