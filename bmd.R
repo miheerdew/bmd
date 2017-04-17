@@ -1,5 +1,7 @@
 library(Rcpp)
 library(RcppParallel)
+library(foreach)
+library(doParallel)
 source("makeVars.R")
 source("stdize.R")
 #sourceCpp("correlation.cpp")
@@ -30,6 +32,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
   }
 
   start_second <- proc.time()[3]
+  td <- tempdir()
   
   
   #-------------------------------------------------------------------------------
@@ -285,10 +288,35 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
   
   extract <- function (indx, interact = FALSE, print_output = verbose) {
     
-    if (interact && (indx %in% clustered || stop_extracting)) return(integer(0))
+    if (print_output) {
+      cat("\n#-----------------------------------------\n\n")
+      cat("trying indx", indx, "\n")
+    }
+    
+    # If you want to interact with trackers, get the current tracking info
+    
+    if (interact) {
+      
+      # Seeing if stop has been triggered
+      stop_extracting <- as.logical(readLines(stop_fn))
+      if (stop_extracting) return(list(report = "stop_extracting"))
+      
+      # Seeing if indx already in a comm
+      comm_files <- list.files(comm_dn, full.names = TRUE)
+      if (length(comm_files) > 0) {
+        comms <- lapply(comm_files, readLines)
+      } else {
+        comms <- numeric(0)
+      }
+      clustered <- as.numeric(unique(unlist(comms)))
+      if (indx %in% clustered) return(list(report = "indx_clustered"))
+      
+      OL_count <- as.numeric(readLines(OL_fn))
+      Dud_count <- as.numeric(readLines(Dud_fn))
+      
+    }
     
     if (print_output && interact) {
-      cat("\n#-----------------------------------------\n\n")
       cat("extraction", which(extractord == indx), "of", length(extractord), "\n\n")
       cat("OL_count = ", OL_count, "\n")
       cat("Dud_count = ", Dud_count, "\n")
@@ -298,8 +326,11 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
       
     B0x <- initialize(indx)
     if (length(B0x) <= 1) {
-      if (interact) Dud_count <<- Dud_count + 1
-      return(integer(0))
+      if (interact) {
+        Dud_count <- Dud_count + 1
+        writeLines(as.character(Dud_count), Dud_fn)
+      }
+      return(NULL)
     }
     B0y <- update5(B0x, comm_indx)
 
@@ -417,35 +448,40 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
     }
 
     # Storing B_new and collecting update info
-    if (length(B_newx) * length(B_newy) == 0)
+    if (length(B_newx) * length(B_newy) == 0) {
       B_new <- integer(0)
-    if (interact) final.sets[[indx]] <<- B_new
+    } else {
+      commfn <- file.path(comm_dn, paste0("node", indx, ".txt"))
+      file.create(commfn)
+      writeLines(as.character(B_new), commfn)
+    }
     update_info <- list("mean_jaccards" = mean_jaccards, 
                         "consec_jaccards" = consec_jaccards,
-                        "consec_sizes"= consec_sizes,
+                        "consec_sizes" = consec_sizes,
                         "found_cycle" = found_cycle,
                         "found_break" = found_break)
-    if (interact) clustered <<- union(clustered, B_new)
 
     # Checking overlap with previous sets
-    if (interact && sum(plugged) > 0) {
-      OL_check <- unlist(lapply(final.sets[plugged], 
-                                function (C) jaccard(B_new, C)))
-      if (sum(OL_check < 1 - OL_thres) > 0)
-        OL_count <<- OL_count + 1
+    if (interact && length(comms) > 0) {
+      OL_check <- unlist(lapply(comms, function (C) jaccard(B_new, C)))
+      if (sum(OL_check < 1 - OL_thres) > 0) {
+        OL_count <- OL_count + 1
+        writeLines(as.character(OL_count), OL_fn)
+      }
     }
     
     # Noting which final.sets are filled; doing checks
-    if (interact) plugged[indx] <<- length(B_new) > 0
     current_time <- proc.time()[3] - start_second
-    if (interact && current_time > time_limit || Dud_count > Dud_tol || OL_count > OL_tol)
-      stop_extracting <<- TRUE
+    if (interact && (current_time > time_limit || Dud_count > Dud_tol || OL_count > OL_tol)) {
+      writeLines("TRUE", stop_fn)
+    }
     
     return(list("StableComm" = B_new,
                 "update_info" = update_info,
                 "initial_set" = initial_set,
                 "itCount" = itCount, "did_it_cycle" = did_it_cycle,
-                "current_time" = current_time))
+                "current_time" = current_time,
+                "report" = "complete_extraction"))
   }
   
   
@@ -464,6 +500,14 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
                                       decreasing = TRUE)]
 
   # Initializing control variables
+  stop_fn <- file.path(td, "stop_extracting.txt")
+  OL_fn <- file.path(td, "OL_count.txt")
+  Dud_fn <- file.path(td, "Dud_count.txt")
+  comm_dn <- file.path(td, "comm_dn")
+  file.create(stop_fn, OL_fn, Dud_fn, overwrite = TRUE)
+  dir.create(comm_dn, showWarnings = FALSE)
+  writeLines("0", OL_fn); writeLines("0", Dud_fn); writeLines("FALSE", stop_fn)
+  
   clustered <- integer(0)
   stop_extracting <- FALSE
   plugged <- logical(dx + dy)
@@ -473,16 +517,20 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
   
   # Extracting
   if (parallel) {
+    ticp <- proc.time()[3]
     no_cores <- detectCores() - 1
     cl <- makeCluster(no_cores)
     registerDoParallel(cl)
-    extract_res <- foreach(i = extractord, .combine='c') %dopar% {
-      extract(i, interact = TRUE, print_output = FALSE)
+    extract_res <- foreach(i = extractord) %dopar% {
+      extract(i, print_output = FALSE, interact = TRUE)
     }
     stopCluster(cl)
+    tocp <- proc.time()[3]
   } else {
+    tic <- proc.time()[3]
     extract_res <- lapply(extractord, extract, interact = TRUE)
     extract_res <- extract_res[order(extractord)]
+    toc <- proc.time()[3]
   }
 
   #-----------------------------------------------------------------------------
