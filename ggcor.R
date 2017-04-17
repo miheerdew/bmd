@@ -2,9 +2,12 @@ library(reshape2)
 library(ggplot2)
 
 ggcor <- function (cormat, fn = NULL, removeLowerTri = FALSE, 
-                   fisher = TRUE, n = NULL, title = "corrstats") {
+                   fisher = TRUE, n = NULL, title = "corrstats",
+                   xlab = "N1", ylab = "N2", theme = NULL, subtitle = "sub",
+                   width = 8, height = 7, killdiag = TRUE) {
   
-  diag(cormat) <- 0
+  if (killdiag)
+    diag(cormat) <- 0
   
   # Shrinking the matrix if necessary
   if (nrow(cormat) == ncol(cormat) && nrow(cormat) > 1000) {
@@ -26,9 +29,12 @@ ggcor <- function (cormat, fn = NULL, removeLowerTri = FALSE,
       }
       mposi <- mposi + blocksize
     }
+    newcormat <- newcormat[c(1:(i - 1)), c(1:(j - 1))]
   } else {
     newcormat <- cormat
   }
+  
+  
   
   if (removeLowerTri)
     newcormat[lower.tri(cormat)] <- NA
@@ -58,16 +64,19 @@ ggcor <- function (cormat, fn = NULL, removeLowerTri = FALSE,
                                        mid = "white", 
                                        midpoint = 0, limits = plotrange,
                                        space = "Lab", 
-                                       name = "Corr")
+                                       name = "Cor")
     
   }
   
   p <- ggplot(data = melted_cormat, aes(x = Var2, y = Var1, fill = value)) + 
-    geom_tile() + colorscale + ggtitle(title)
+    geom_tile() + colorscale + ggtitle(title, subtitle) + 
+    labs(x = xlab, y = ylab)
+  
+  if (!is.null(theme))
+    p <- p + theme
+  
   if (!is.null(fn)) {
-    png(fn)
-    print(p)
-    dev.off()
+    ggsave(fn, p, width = width, height = height)
   } else {
     return(p)
   }

@@ -169,5 +169,24 @@ make_param_list <- function (n = 200,
               "corNoiseY" = corNoiseY,
               "maxNoiseCor" = maxNoiseCor))
 }
+
+
+if (FALSE) {
+  
+  par_list <- make_param_list()
+  default_sim <- sim_eQTL_network(par_list)
+  cormat <- cor(cbind(default_sim$X, default_sim$Y))
+  cortheme <- theme(axis.title.x = element_text(size = 20),
+                    axis.title.y = element_text(size = 20),
+                    axis.text.x = element_text(size = 15),
+                    axis.text.y = element_text(size = 15),
+                    title = element_text(size = 25),
+                    legend.title = element_text(size = 20),
+                    legend.text = element_text(size = 15))
+  
+  source("ggcor.R")
+  ggcor(cormat, fisher = FALSE, fn = "default_mat.png", theme = cortheme,
+        title = "Default Network Model", width = 11.5, height = 10)
+}
     
     
