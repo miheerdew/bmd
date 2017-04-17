@@ -1,14 +1,13 @@
-library(Rcpp)
 library(doParallel)
 library(foreach)
 source("makeVars.R")
 source("stdize.R")
-sourceCpp("bmd_input.cpp")
+Rcpp::sourceCpp("bmd_helper.cpp")
 
 bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, verbose = TRUE,
                      updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
                      updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1,
-                     calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE) {
+                     calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE, conserv=TRUE) {
 
   if (FALSE) {
     alpha = 0.05
@@ -28,6 +27,7 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
     add_rate = 1
     calc_full_cor=TRUE
     parallel = FALSE
+    conserv = TRUE
   }
 
   start_second <- proc.time()[3]
@@ -87,92 +87,99 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
 
   }
 
-  bh_reject <- function (pvals, alpha, conserv = TRUE) {
 
-    m <- length(pvals)
-
-    if (!conserv) {
-      pvals_adj <- m * pvals / rank(pvals)
-    } else {
-      mults <- sum(1 / c(1:m))
-      pvals_adj <- mults * m * pvals / rank(pvals)
-    }
-
-    if (sum(pvals_adj <= alpha) > 0) {
-      thres <- max(pvals[pvals_adj <= alpha])
-      return(which(pvals <= thres))
-    } else {
-      return(integer(0))
-    }
-  }
-  
   #-----------------------------------------------------------------------------
   # Setup calculations & update functions
 
-  inp <- new(BmdInput, scale(X), scale(Y))
-  dx <- inp$dx
-  dy <- inp$dy
-  n  <- inp$n
+  X_orig <- X; Y_orig <- Y;
+
+  cat("Setting up calculations\n")
+
+  X <- scale(X); Y <- scale(Y)
+  X3 <- X^3; X2 <- X^2; X4ColSum <- colSums(X^4)
+  Y3 <- Y^3; Y2 <- Y^2; Y4ColSum <- colSums(Y^4)
+
+  if(calc_full_cor){
+    cat("Calculating full cross correlation matrix\n")
+    full_xy_cor <- cor(X, Y)
+  }
+
+  dx <- ncol(X)
+  dy <- ncol(Y)
+  n  <- nrow(X)
 
   Xindx <- 1:dx
   Yindx <- (dx + 1):(dx + dy)
 
-  pvals <- function(A, test_x) {
-    return(inp$pvals(A, test_x))
-  }
-
-  update5 <- function (B, A = NULL) {
-    test_x <- min(B) > dx
-    if(test_x){
-      B <- B - dx
-    }
-    successes <- as.vector(inp$update(B, test_x, TRUE))
-
-    if (test_x) {
-      Anew <- Xindx[successes]
+  initialize <- function(u){
+    if(u > dx){
+      #Test X
+      u <- u - dx
+      return(initializeC(n,
+                        if(calc_full_cor) full_xy_cor[,u] else cor(X, Y[,u]),
+                        alpha,
+                        conserv))
     } else {
-      Anew <- Yindx[successes]
+      #Test Y
+      return(initializeC(n,
+                        if(calc_full_cor) t(full_xy_cor[u,]) else cor(Y, X[,u]),
+                        alpha,
+                        conserv) + dx)
     }
-
-    return(Anew)
-
   }
 
-  initialize3 <- function(u){
-    if (u <= dx) {
-      return(as.vector(inp$init(u, FALSE, TRUE))+dx)
+  if(calc_full_cor){
+    update5 <- function(A, B=NULL){
+      if(min(A) > dx){
+        #Test X
+        A <- A - dx
+        return(updateC(X, Y[,A,drop=FALSE], X4ColSum, X2, X3,
+                       full_xy_cor[,A, drop=FALSE],
+                       alpha, conserv))
+      } else {
+        #Test Y
+        return(updateC(Y, X[,A,drop=FALSE], Y4ColSum, Y2, Y3,
+                       t(full_xy_cor[A,,drop=FALSE]),
+                       alpha, conserv) + dx)
+      }
+    }
+  } else {
+    update5 <- function(A, B=NULL){
+      if(min(A) > dx){
+        #Test X
+        A <- A - dx
+        return(updateC(X, Y[,A,drop=FALSE], X4ColSum, X2, X3,
+                       cor(X, Y[,A,drop=FALSE]),
+                       alpha, conserv))
+      } else {
+        #Test Y
+        return(updateC(Y, X[,A,drop=FALSE], Y4ColSum, Y2, Y3,
+                       cor(Y, X[,A,drop=FALSE]),
+                       alpha, conserv) + dx)
+      }
+    }
+  }
+
+  pvals <- function(A){
+    if(min(A) > dx){
+      #Test X
+      A <- A - dx
+      return(pvalsC(X, Y[,A,drop=FALSE], X4ColSum, X2, X3,
+              if(calc_full_cor) full_xy_cor[,A,drop=FALSE] else cor(X, Y[,A])))
     } else {
-      return(as.vector(inp$init(u-dx, TRUE, TRUE)))
+      #Test Y
+      return(pvalsC(Y, X[,A,drop=FALSE], Y4ColSum, Y2, Y3,
+              if(calc_full_cor) t(full_xy_cor[A,drop=FALSE]) else cor(Y, X[,A])))
     }
   }
 
-  initialize <- function (...) {
-
-    if (initializeMethod == 3) {
-      return(initialize3(...))
-    } else {
-      stop('only initializeMethod = 3 supported\n')
-    }
-  }
-
-  update <- function (...) {
-
-    if (updateMethod == 5)
-      return(update5(...))
-
-    if (!updateMethod %in% c(5, 7)) {
-      stop('only updateMethod = 5 or 7 supported\n')
-    }
-
-  }
-  
   #-----------------------------------------------------------------------------
   # Extract function
-  
+
   extract <- function (indx, interact = FALSE, print_output = verbose) {
-    
+
     if (interact && (indx %in% clustered || stop_extracting)) return(integer(0))
-    
+
     if (print_output && interact) {
       cat("\n#-----------------------------------------\n\n")
       cat("extraction", which(extractord == indx), "of", length(extractord), "\n\n")
@@ -181,13 +188,13 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
       cat(paste0(sum(clustered <= dx), " X vertices in communities.\n"))
       cat(paste0(sum(clustered > dx), " Y vertices in communities.\n"))
     }
-      
+
     B0x <- initialize(indx)
     if (length(B0x) <= 1) {
       if (interact) Dud_count <<- Dud_count + 1
       return(integer(0))
     }
-    B0y <- update5(B0x, comm_indx)
+    B0y <- update5(B0x, indx)
 
     # Initializing extraction loop
     B_oldx <- B0x; B_oldy <- B0y
@@ -206,9 +213,9 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
       itCount <- itCount + 1
 
       if (updateMethod != 7) {
-        B_newx <- update(B_oldy, B_oldx)
+        B_newx <- update5(B_oldy, B_oldx)
         if (length(B_newx) >= 1) {
-          B_newy <- update(B_newx, B_oldy)
+          B_newy <- update5(B_newx, B_oldy)
         } else {
           B_newy <- integer(0)
           break
@@ -222,13 +229,13 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
         if (comm_indx > dx) {
           Xpvals <- pvals(B_oldy)
           Ypvals <- pvals(B_oldx)
-          B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
+          B_new <- bh_rejectC(c(Xpvals, Ypvals), alpha, conserv)
           B_newx <- B_new[B_new <= dx]
           B_newy <- B_new[B_new > dx]
         } else {
           Xpvals <- pvals(B_oldx)
           Ypvals <- pvals(B_oldy)
-          B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
+          B_new <- bh_rejectC(c(Xpvals, Ypvals), alpha, conserv)
           B_newx <- B_new[B_new > dx]
           B_newy <- B_new[B_new <= dx]
         }
@@ -306,7 +313,7 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
     if (length(B_newx) * length(B_newy) == 0)
       B_new <- integer(0)
     if (interact) final.sets[[indx]] <<- B_new
-    update_info <- list("mean_jaccards" = mean_jaccards, 
+    update_info <- list("mean_jaccards" = mean_jaccards,
                         "consec_jaccards" = consec_jaccards,
                         "consec_sizes"= consec_sizes,
                         "found_cycle" = found_cycle,
@@ -315,18 +322,18 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
 
     # Checking overlap with previous sets
     if (interact && sum(plugged) > 0) {
-      OL_check <- unlist(lapply(final.sets[plugged], 
+      OL_check <- unlist(lapply(final.sets[plugged],
                                 function (C) jaccard(B_new, C)))
       if (sum(OL_check < 1 - OL_thres) > 0)
         OL_count <<- OL_count + 1
     }
-    
+
     # Noting which final.sets are filled; doing checks
     if (interact) plugged[indx] <<- length(B_new) > 0
     current_time <- proc.time()[3] - start_second
     if (interact && current_time > time_limit || Dud_count > Dud_tol || OL_count > OL_tol)
       stop_extracting <<- TRUE
-    
+
     return(list("StableComm" = B_new,
                 "update_info" = update_info,
                 "initial_set" = initial_set,
@@ -339,12 +346,12 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
 
   cat("Beginning method.\n\n")
 
-  # Getting node orders. Remember inp$X, inp$Y are scaled.
-  Ysum <- inp$Y %*% rep(1,dy) / dy
-  Xsum <- inp$X %*% rep(1,dx) / dx
-  cor_X_to_Ysums <- as.vector(t(Ysum) %*% inp$X)
-  cor_Y_to_Xsums <- as.vector(t(Xsum) %*% inp$Y)
-  
+  # Getting node orders.
+  Ysum <- Y %*% rep(1,dy) / dy
+  Xsum <- X %*% rep(1,dx) / dx
+  cor_X_to_Ysums <- as.vector(t(Ysum) %*% X)
+  cor_Y_to_Xsums <- as.vector(t(Xsum) %*% Y)
+
   extractord <- c(Xindx, Yindx)[order(c(cor_X_to_Ysums, cor_Y_to_Xsums),
                                       decreasing = TRUE)]
 
@@ -355,7 +362,7 @@ bmd_cpp <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TR
   OL_count <- 0
   Dud_count <- 0
   final.sets <- rep(list(integer(0)), length(extractord))
-  
+
   # Extracting
   if (parallel) {
     no_cores <- detectCores() - 1
