@@ -6,16 +6,17 @@ source("makeVars.R")
 source("stdize.R")
 Rcpp::sourceCpp("bmd_helper.cpp")
 
-bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, verbose = TRUE,
-                 updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
-                 updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1,
-                 calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE, doC = TRUE) {
+bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, verbose = TRUE, generalOutput = TRUE,
+                  updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
+                  updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1,
+                  calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE, conserv = TRUE) {
 
   if (FALSE) {
     alpha = 0.05
     OL_thres = 0.9
     tag = NULL
     verbose = TRUE
+    generalOutput = TRUE
     OL_tol = Inf
     Dud_tol = Inf
     time_limit = Inf
@@ -93,16 +94,12 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
   #-----------------------------------------------------------------------------
   # Setup calculations & update functions
   
-  cat("Setting up calculations\n")
+  if (generalOutput)
+    cat("Setting up calculations\n")
   
   X <- scale(X); Y <- scale(Y)
   X3 <- X^3; X2 <- X^2; X4ColSum <- colSums(X^4)
   Y3 <- Y^3; Y2 <- Y^2; Y4ColSum <- colSums(Y^4)
-  
-  if(calc_full_cor){
-    cat("Calculating full cross correlation matrix\n")
-    full_xy_cor <- cor(X, Y)
-  }
   
   dx <- ncol(X)
   dy <- ncol(Y)
@@ -110,6 +107,15 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
   
   Xindx <- 1:dx
   Yindx <- (dx + 1):(dx + dy)
+  
+  #if (dx * dy <= 1e7)
+  #  calc_full_cor <- TRUE
+  
+  if(calc_full_cor){
+    if (generalOutput)
+      cat("Calculating full cross correlation matrix\n")
+    full_xy_cor <- cor(X, Y)
+  }
   
   initialize <- function(u){
     if(u > dx){
@@ -241,9 +247,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
       itCount <- itCount + 1
       
       if (updateMethod != 7) {
-        B_newx <- update(B_oldy, B_oldx)
+        B_newx <- update5(B_oldy, B_oldx)
         if (length(B_newx) >= 1) {
-          B_newy <- update(B_newx, B_oldy)
+          B_newy <- update5(B_newx, B_oldy)
         } else {
           B_newy <- integer(0)
           break
@@ -340,6 +346,10 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
     # Storing B_new and collecting update info
     if (length(B_newx) * length(B_newy) == 0) {
       B_new <- integer(0)
+      if (interact) {
+        Dud_count <- Dud_count + 1
+        writeLines(as.character(Dud_count), Dud_fn)
+      }
     } else {
       commfn <- file.path(comm_dn, paste0("node", indx, ".txt"))
       file.create(commfn)
@@ -378,7 +388,8 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
   #-------------------------------------------------------------------------------
   # Extractions
 
-  cat("Beginning method.\n\n")
+  if (generalOutput)
+    cat("Beginning method.\n\n")
 
   # Getting node orders. Remember inp$X, inp$Y are scaled.
   Ysum <- Y %*% rep(1,dy) / dy
@@ -395,7 +406,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
   OL_fn <- file.path(td, "OL_count.txt")
   Dud_fn <- file.path(td, "Dud_count.txt")
   comm_dn <- file.path(td, "comm_dn")
-  file.create(stop_fn, OL_fn, Dud_fn, overwrite = TRUE)
+  file.create(stop_fn, OL_fn, Dud_fn)
   dir.create(comm_dn, showWarnings = FALSE)
   writeLines("0", OL_fn); writeLines("0", Dud_fn); writeLines("FALSE", stop_fn)
   
@@ -419,14 +430,26 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
   }
 
   #-----------------------------------------------------------------------------
-  #  Clean-up and return -------------------------------------------------------
+  # Clean-up and return -------------------------------------------------------
 
+  if (generalOutput)
+    cat("Cleaning up.\n")
+  
+  # Getting final sets and counts
+  final.sets <- lapply(extract_res, function (R) R$StableComm)
+  OL_count <- as.numeric(readLines(OL_fn))
+  Dud_count <- as.numeric(readLines(Dud_fn))
+  
+  # Removing temp files
+  file.remove(stop_fn, OL_fn, Dud_fn)
+  unlink(comm_dn, recursive = TRUE)
+  
+  # Making report
   endtime <- proc.time()[3]
   report <- list(OL_count, Dud_count, endtime - start_second)
   names(report) <- c("OL_count", "Dud_count", "timer")
 
   # Removing blanks and trivial sets
-  cat("removing overlap and unpacking comms...\n")
   nonNullIndxs <- which(unlist(lapply(final.sets, length)) > 0)
   if (length(nonNullIndxs) == 0) {
     returnList <- list("communities" = list("X_sets" = NULL,
@@ -443,18 +466,8 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
   finalComms <- OLfilt$final_comms
   finalIndxs <- nonNullIndxs[OLfilt$kept_comms]
 
-  X_sets <- lapply(finalComms, function (C) C[C <= dx])
-  Y_sets <- lapply(finalComms, function (C) C[C > dx])
-  X_bg <- setdiff(Xindx, unlist(X_sets))
-  Y_bg <- setdiff(Yindx, unlist(Y_sets))
-
-  returnList <- list("communities" = list("X_sets" = X_sets,
-                                          "Y_sets" = Y_sets),
-                     "background" = list("X_bg" = X_bg,
-                                         "Y_bg" = Y_bg),
-                     "extract_res" = extract_res[finalIndxs],
+  returnList <- list("extract_res" = extract_res,
                      "finalIndxs" = finalIndxs,
-                     "final.sets" = final.sets,
                      "report" = report)
   return(returnList)
   
