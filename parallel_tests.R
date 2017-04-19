@@ -5,6 +5,7 @@ library(RcppParallel)
 library(foreach)
 library(doParallel)
 library(rbenchmark)
+library(bmdCpp)
 source("makeVars.R")
 source("stdize.R")
 
@@ -26,14 +27,48 @@ n  <- nrow(X)
 Xindx <- 1:dx
 Yindx <- (dx + 1):(dx + dy)
 
+testnodes <- 99
+
 res <- benchmark({
-# Let's initialize the first 10 nodes with foreach
-cl <- makeCluster(no_cores)
-registerDoParallel(cl)
-clusterEvalQ(cl, library(bmdCpp))
-sets <- foreach(i = rep(1:dy, 5)) %dopar% {
+  # 1 rep
+  cl <- makeCluster(no_cores)
+  registerDoParallel(cl)
+  clusterEvalQ(cl, library(bmdCpp))
+  sets1 <- foreach(i = rep(1:testnodes, 1)) %dopar% {
+      bmdCpp::initializeC(n, cor(X, Y[ , i]), 0.05, TRUE)
+  }
+  stopCluster(cl)
+},
+{
+  # 2 reps
+  cl <- makeCluster(no_cores)
+  registerDoParallel(cl)
+  clusterEvalQ(cl, library(bmdCpp))
+  sets2 <- foreach(i = rep(1:testnodes, 2)) %dopar% {
     bmdCpp::initializeC(n, cor(X, Y[ , i]), 0.05, TRUE)
-}
-# Error in { : task 1 failed - "NULL value passed as symbol address"
-stopCluster(cl)},
-lapply(rep(1:dy, 5), function (i) initializeC(n, cor(X, Y[ , i]), 0.05, TRUE)), replications = 5)
+  }
+  stopCluster(cl)
+},
+{
+  # 3 reps
+  cl <- makeCluster(no_cores)
+  registerDoParallel(cl)
+  clusterEvalQ(cl, library(bmdCpp))
+  sets3 <- foreach(i = rep(1:testnodes, 3)) %dopar% {
+    bmdCpp::initializeC(n, cor(X, Y[ , i]), 0.05, TRUE)
+  }
+  stopCluster(cl)
+},
+{
+  # 4 reps
+  cl <- makeCluster(no_cores)
+  registerDoParallel(cl)
+  clusterEvalQ(cl, library(bmdCpp))
+  sets4 <- foreach(i = rep(1:testnodes, 4)) %dopar% {
+    bmdCpp::initializeC(n, cor(X, Y[ , i]), 0.05, TRUE)
+  }
+  stopCluster(cl)
+},
+replications = 5)
+
+
