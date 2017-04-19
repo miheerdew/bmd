@@ -45,7 +45,7 @@ for (exper in run_expers) {
       # Running BMDcpp
       if (runBMDcpp) {
         timer <- proc.time()[3]
-        results <- bmdC(sim$X, sim$Y, alpha = alpha,
+        results <- bmdC(sim$X, sim$Y, alpha = alpha, verbose = FALSE, generalOutput = TRUE,
                            updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
                            calc_full_cor = TRUE, updateMethod = 5)
         timer <- proc.time()[3] - timer
@@ -55,7 +55,7 @@ for (exper in run_expers) {
       # Running BMD2
       if (runBMD2) {
         timer <- proc.time()[3]
-        results <- bmd(sim$X, sim$Y, alpha = alpha,
+        results <- bmd(sim$X, sim$Y, alpha = alpha, verbose = FALSE, generalOutput = TRUE,
                        updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
                        calc_full_cor = TRUE, updateMethod = 5)
         timer <- proc.time()[3] - timer
