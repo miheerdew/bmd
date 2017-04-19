@@ -19,13 +19,13 @@ R_mod <- lapply(R$extract_res, function (R) c(R$StableComm, R$initial_set))
 identical(CC_mod, RC_mod); identical(RC_mod, C_mod); identical(R_mod, C_mod)
 
 # Speed check; this will take about 10 minutes
-res <- benchmark(bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, calc_full_cor = TRUE),
-                 bmd(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, calc_full_cor = TRUE, parallel = TRUE),
-                 bmd(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, calc_full_cor = TRUE),
-                 bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE),
-                 bmd(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, parallel = TRUE),
-                 bmd(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE),
-                 bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, parallel = TRUE),
-                 bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, parallel = TRUE, calc_full_cor = TRUE),
-                 replications = 5)
+res <- benchmark(C_F = bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, calc_full_cor = TRUE),
+                 R_F_P = bmd(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, calc_full_cor = TRUE, parallel = TRUE),
+                 R_F = bmd(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, calc_full_cor = TRUE),
+                 C = bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE),
+                 R_P = bmd(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, parallel = TRUE),
+                 R = bmd(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE),
+                 C_P = bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, parallel = TRUE),
+                 C_F_P = bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, parallel = TRUE, calc_full_cor = TRUE),
+                 replications = 2)
                 

@@ -29,7 +29,10 @@ Yindx <- (dx + 1):(dx + dy)
 
 testnodes <- 99
 
-res <- benchmark({
+res <- benchmark(Basic = {sets0 <- lapply(rep(1:testnodes, 1),
+                                 function (i) initialize(n, cor(X, Y[ , i])))},
+  
+Par1 = {
   # 1 rep
   cl <- makeCluster(no_cores)
   registerDoParallel(cl)
@@ -39,7 +42,7 @@ res <- benchmark({
   }
   stopCluster(cl)
 },
-{
+Par2 = {
   # 2 reps
   cl <- makeCluster(no_cores)
   registerDoParallel(cl)
@@ -49,7 +52,7 @@ res <- benchmark({
   }
   stopCluster(cl)
 },
-{
+Par3 = {
   # 3 reps
   cl <- makeCluster(no_cores)
   registerDoParallel(cl)
@@ -59,13 +62,29 @@ res <- benchmark({
   }
   stopCluster(cl)
 },
-{
+Par4 = {
   # 4 reps
   cl <- makeCluster(no_cores)
   registerDoParallel(cl)
   clusterEvalQ(cl, library(bmdCpp))
   sets4 <- foreach(i = rep(1:testnodes, 4)) %dopar% {
     bmdCpp::initializeC(n, cor(X, Y[ , i]), 0.05, TRUE)
+  }
+  stopCluster(cl)
+},
+replications = 5)
+
+k <- 20
+
+res2 <- benchmark(Basic = {sets0 <- lapply(rep(1:testnodes, k),
+                                 function (i) initialize(n, cor(X, Y[ , i])))},
+Par = {
+  # k reps
+  cl <- makeCluster(no_cores)
+  registerDoParallel(cl)
+  clusterEvalQ(cl, library(bmdCpp))
+  sets1 <- foreach(i = rep(1:testnodes, k)) %dopar% {
+      bmdCpp::initializeC(n, cor(X, Y[ , i]), 0.05, TRUE)
   }
   stopCluster(cl)
 },
