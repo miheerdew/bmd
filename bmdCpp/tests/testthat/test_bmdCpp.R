@@ -1,10 +1,5 @@
-library(Rcpp)
-library(testthat)
-library(microbenchmark)
-library(bmdCpp)
-
-source("../varcalcs.R", chdir = T)
-source("../sim_eQTL_network.R", chdir = T)
+source("varcalcs.R")
+source("sim_eQTL_network.R")
 
 context("BMD helpers")
 
@@ -151,7 +146,6 @@ compare_updates <-
     )
   }
 
-
 test_that("update works correctly", {
   compare_updates(1:100, FALSE, TRUE)
 
@@ -161,11 +155,3 @@ test_that("update works correctly", {
   A <- 1:dx
   compare_updates(A, FALSE, TRUE)
 })
-
-# t <- 5
-# print(compare_pvalues(1:30, TRUE, benchmark = TRUE, times=t))
-# print(compare_bhreject(runif(1e3), 0.05, FALSE, benchmark = TRUE, times=t))
-# print(compare_inititalization(23, TRUE, TRUE, benchmark = TRUE, time=t))
-# A <- 1:dx
-# print(compare_updates(A, FALSE, TRUE, benchmark = TRUE, times=t))
-

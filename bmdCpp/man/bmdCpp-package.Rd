@@ -13,7 +13,7 @@
 The DESCRIPTION file:
 \packageDESCRIPTION{bmdCpp}
 \packageIndices{bmdCpp}
-~~ An overview of how to use the package, including the most important functions ~~
+This package provides the functions for Bimodule detection.
 }
 \author{
 \packageAuthor{bmdCpp}
@@ -21,15 +21,9 @@ The DESCRIPTION file:
 Maintainer: \packageMaintainer{bmdCpp}
 }
 \references{
-~~ Literature or other references for background information ~~
+NA
 }
-~~ Optionally other standard keywords, one per line, from file KEYWORDS in the R ~~
-~~ documentation directory ~~
 \keyword{ package }
 \seealso{
-~~ Optional links to other man pages, e.g. ~~
-~~ \code{\link[<pkg>:<pkg>-package]{<pkg>}} ~~
-}
-\examples{
-~~ simple examples of the most important functions ~~
+\code{\link[<pkg>:<pkg>-package]{<pkg>}}
 }

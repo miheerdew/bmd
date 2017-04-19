@@ -11,6 +11,7 @@ sims-results
 GTEx_results
 
 #Rcpp files
-bmdCpp/src/*.o
-bmdCpp/*.so
-bmdCpp/*.dll
+bmdCpp.Rcheck
+bmdCpp/*/*.o
+bmdCpp/*/*.so
+bmdCpp/*/*.dll
