@@ -4,7 +4,8 @@ library(foreach)
 library(doParallel)
 source("makeVars.R")
 source("stdize.R")
-Rcpp::sourceCpp("bmd_helper.cpp")
+#Rcpp::sourceCpp("bmd_helper.cpp")
+library(bmdCpp)
 
 bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, verbose = TRUE, generalOutput = TRUE,
                   updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
@@ -415,7 +416,7 @@ bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE,
     ticp <- proc.time()[3]
     no_cores <- detectCores() - 1
     cl <- makeCluster(no_cores)
-    clusterEvalQ(cl, Rcpp::sourceCpp("bmd_helper.cpp"))
+    clusterEvalQ(cl, library(bmdCpp))
     registerDoParallel(cl)
     extract_res <- foreach(i = extractord) %dopar% {
       extract(i, print_output = FALSE, interact = TRUE)

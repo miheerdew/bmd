@@ -28,7 +28,7 @@ Yindx <- (dx + 1):(dx + dy)
 # Let's initialize the first 10 nodes with foreach
 cl <- makeCluster(no_cores)
 registerDoParallel(cl)
-#clusterEvalQ(cl, library(bmdCpp))
+clusterEvalQ(cl, library(bmdCpp))
 sets <- foreach(i = 1:10) %dopar% {
     bmdCpp::initializeC(n, cor(X, Y[ , i]), 0.05, TRUE)
 }

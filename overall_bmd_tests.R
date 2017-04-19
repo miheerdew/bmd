@@ -25,5 +25,7 @@ res <- benchmark(bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, calc
                  bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE),
                  bmd(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, parallel = TRUE),
                  bmd(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE),
+                 bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, parallel = TRUE),
+                 bmdC(sim$X, sim$Y, generalOutput = FALSE, verbose = FALSE, parallel = TRUE, calc_full_cor = TRUE),
                  replications = 5)
                 
