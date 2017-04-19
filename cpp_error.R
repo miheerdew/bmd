@@ -6,7 +6,7 @@ library(foreach)
 library(doParallel)
 source("makeVars.R")
 source("stdize.R")
-Rcpp::sourceCpp("bmd_helper.cpp")
+
 no_cores <- detectCores() - 1
 
 
@@ -28,21 +28,9 @@ Yindx <- (dx + 1):(dx + dy)
 # Let's initialize the first 10 nodes with foreach
 cl <- makeCluster(no_cores)
 registerDoParallel(cl)
+#clusterEvalQ(cl, library(bmdCpp))
 sets <- foreach(i = 1:10) %dopar% {
-    initializeC(n, cor(X, Y[ , i]), 0.05, TRUE)
+    bmdCpp::initializeC(n, cor(X, Y[ , i]), 0.05, TRUE)
 }
 # Error in { : task 1 failed - "NULL value passed as symbol address"
 stopCluster(cl)
-
-
-
-# Maybe if we build the cpp functions in each node? No such luck unfortunately:
-cl <- makeCluster(no_cores)
-registerDoParallel(cl)
-clusterEvalQ(cl, Rcpp::sourceCpp("bmd_helper.cpp"))
-sets <- foreach(i = 1:10) %dopar% {
-    initializeC(n, cor(X, Y[ , i]), 0.05, TRUE)
-}
-# Error in { : task 1 failed - "NULL value passed as symbol address"
-stopCluster(cl)
-

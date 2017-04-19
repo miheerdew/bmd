@@ -1,14 +1,14 @@
 library(Rcpp)
 library(testthat)
 library(microbenchmark)
+library(bmdCpp)
 
-sourceCpp("../bmd_helper.cpp")
 source("../varcalcs.R", chdir = T)
 source("../sim_eQTL_network.R", chdir = T)
 
 context("BMD helpers")
 
-sim <- sim_eQTL_network(make_param_list(b = 50))
+sim <- sim_eQTL_network(make_param_list(b = 20))
 X <- scale(sim$X)
 Y <- scale(sim$Y)
 dy <- ncol(Y)
@@ -162,10 +162,10 @@ test_that("update works correctly", {
   compare_updates(A, FALSE, TRUE)
 })
 
-t <- 5
-print(compare_pvalues(1:30, TRUE, benchmark = TRUE, times=t))
-print(compare_bhreject(runif(1e3), 0.05, FALSE, benchmark = TRUE, times=t))
-print(compare_inititalization(23, TRUE, TRUE, benchmark = TRUE, time=t))
-A <- 1:dx
-print(compare_updates(A, FALSE, TRUE, benchmark = TRUE, times=t))
+# t <- 5
+# print(compare_pvalues(1:30, TRUE, benchmark = TRUE, times=t))
+# print(compare_bhreject(runif(1e3), 0.05, FALSE, benchmark = TRUE, times=t))
+# print(compare_inititalization(23, TRUE, TRUE, benchmark = TRUE, time=t))
+# A <- 1:dx
+# print(compare_updates(A, FALSE, TRUE, benchmark = TRUE, times=t))
 
