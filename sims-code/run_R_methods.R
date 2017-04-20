@@ -2,14 +2,15 @@ run_expers <- sapply(commandArgs(TRUE), as.numeric)
 
 source("sim_eQTL_network.R")
 source("bmd.R")
+source("bmdC.R")
 source("bmd_cpp.R")
 source("run_brim.R")
 source("ircc.R")
 total_expers <- readLines("sims-results/exper-names.txt")
 
 runBMDcpp <- TRUE
-runBMD2 <- FALSE
-runBMD <- TRUE
+runBMD2 <- TRUE
+runBMD <- FALSE
 runBRIM <- FALSE
 runkmeans <- FALSE
 
@@ -44,7 +45,7 @@ for (exper in run_expers) {
       # Running BMDcpp
       if (runBMDcpp) {
         timer <- proc.time()[3]
-        results <- bmd_cpp(sim$X, sim$Y, alpha = alpha,
+        results <- bmdC(sim$X, sim$Y, alpha = alpha, verbose = FALSE, generalOutput = TRUE,
                            updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
                            calc_full_cor = TRUE, updateMethod = 5)
         timer <- proc.time()[3] - timer
@@ -54,7 +55,7 @@ for (exper in run_expers) {
       # Running BMD2
       if (runBMD2) {
         timer <- proc.time()[3]
-        results <- bmd(sim$X, sim$Y, alpha = alpha,
+        results <- bmd(sim$X, sim$Y, alpha = alpha, verbose = FALSE, generalOutput = TRUE,
                        updateOutput = FALSE, OL_tol = 100, Dud_tol = 50,
                        calc_full_cor = TRUE, updateMethod = 5)
         timer <- proc.time()[3] - timer

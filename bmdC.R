@@ -36,6 +36,8 @@ bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE,
   
   start_second <- proc.time()[3]
   
+  cat("#-------------------\n")
+  
   
   #-------------------------------------------------------------------------------
   # Auxiliary Functions
@@ -470,6 +472,9 @@ bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE,
   returnList <- list("extract_res" = extract_res,
                      "finalIndxs" = finalIndxs,
                      "report" = report)
+  
+  cat("#-------------------\n\n\n")
+  
   return(returnList)
   
 }

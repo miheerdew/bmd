@@ -20,12 +20,12 @@ source("best_match.R")
 
 # Set method names:
 #methNames <- c("bmd", "kmeans", "brim")
-methNames <- c("bmd", "bmd_cpp")
+methNames <- c("bmd2", "bmd_cpp")
 
 # Set which methods to plot and their plot names
 plot_meths <- c(1, 2)
 #plot_names <- c("BMD", "k-means", "BRIM", "BMD-cpp")
-plot_names <- c("BMD", "BMD-cpp")
+plot_names <- c("bmdR", "bmdC")
 
 # Set points
 pchs <- c(14, 8, 3, 22, 24, 21)
@@ -87,9 +87,17 @@ for (exper in plot_expers) {
             Y_sets <- lapply(results, function (L) L[L > dx])
             comms <- list("X_sets" = X_sets,
                           "Y_sets" = Y_sets)
-          } else {
+          }
+          if (meth == "brim") {
             comms <- results$communities
           }
+          if (!meth %in% c("kmeans", "brim")) {
+            comms <- lapply(results$extract_res[results$finalIndxs], 
+                            function (L) L$StableComm)
+            comms <- list(X_sets = lapply(comms, function (L) L[L <= dx]),
+                          Y_sets = lapply(comms, function (L) L[L > dx]))
+          }
+          
           full_comms <- lapply(seq_along(comms$X_sets),
                                function (i) c(comms$X_sets[[i]],                                             
                                               comms$Y_sets[[i]]))
@@ -102,7 +110,8 @@ for (exper in plot_expers) {
           }
           true_bg <- setdiff(1:(dx + dy),
                              c(unlist(sim$bm)))
-          scores <- best_match_bimodule(full_comms, sim$bms, bg1 = bg1, true_bg)
+          scores <- best_match_bimodule(full_comms, sim$bms, bg1 = bg1, true_bg,
+                                        forcebg = meth == "kmeans")
           methscores[[meth]][p, rep, ] <- scores
           
           methtimes[[meth]][p, rep] <- timer
