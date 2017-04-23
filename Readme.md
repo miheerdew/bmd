@@ -8,4 +8,4 @@ R CMD check bmdCpp_1.0.tar.gz
 
 and 
 
-R CMD install bmdCpp_1.0.tar.gz
+R CMD INSTALL bmdCpp_1.0.tar.gz
