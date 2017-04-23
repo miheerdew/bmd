@@ -1,12 +1,13 @@
 Package: bmdCpp
 Type: Package
-Title: What the package does (short line)
+Title: Rcpp functions for Bimodule Detection 
 Version: 1.0
 Date: 2017-04-18
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Author: Miheer Dewaskar
+Maintainer: Miheer Dewaskar <miheerdew@gmail.com>
+Description: This provides Rcpp functions to compute the one step update in Bimodule Detection using the Object Set testing framework.
+License: NA
 Imports: Rcpp (>= 0.12.10)
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1.9000
+Suggests: testthat
