@@ -41,6 +41,7 @@ pvals <- function(A){
   }
 }
 pvals(1:100)
+pvals((dx + 1):(dx + 100))
 
 testnodes <- 99
 

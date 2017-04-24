@@ -231,7 +231,7 @@ bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE,
       }
       return(NULL)
     }
-    B0y <- update5(B0x, comm_indx)
+    B0y <- update5(B0x, indx)
     
     # Initializing extraction loop
     B_oldx <- B0x; B_oldy <- B0y
@@ -263,16 +263,16 @@ bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE,
           break
       } else {
         
-        if (comm_indx > dx) {
+        if (indx > dx) {
           Xpvals <- pvals(B_oldy)
           Ypvals <- pvals(B_oldx)
-          B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
+          B_new <- bh_rejectC(c(Xpvals, Ypvals), alpha, conserv = TRUE)
           B_newx <- B_new[B_new <= dx]
           B_newy <- B_new[B_new > dx]
         } else {
           Xpvals <- pvals(B_oldx)
           Ypvals <- pvals(B_oldy)
-          B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
+          B_new <- bh_rejectC(c(Xpvals, Ypvals), alpha, conserv = TRUE)
           B_newx <- B_new[B_new > dx]
           B_newy <- B_new[B_new <= dx]
         }
