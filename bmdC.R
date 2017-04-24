@@ -174,11 +174,11 @@ bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE,
       #Test X
       A <- A - dx
       return(pvalsC(X, Y[,A,drop=FALSE], X4ColSum, X2, X3,
-                    if(calc_full_cor) full_xy_cor[,A,drop=FALSE] else cor(X, Y[,A])))
+                    if(calc_full_cor) full_xy_cor[ , A, drop=FALSE] else cor(X, Y[,A])))
     } else {
       #Test Y
       return(pvalsC(Y, X[,A,drop=FALSE], Y4ColSum, Y2, Y3,
-                    if(calc_full_cor) t(full_xy_cor[A,drop=FALSE]) else cor(Y, X[,A])))
+                    if(calc_full_cor) t(full_xy_cor[A, , drop=FALSE]) else cor(Y, X[,A])))
     }
   }
   

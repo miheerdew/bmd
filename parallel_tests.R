@@ -27,6 +27,21 @@ n  <- nrow(X)
 Xindx <- 1:dx
 Yindx <- (dx + 1):(dx + dy)
 
+# Testing p-values
+pvals <- function(A){
+  if(min(A) > dx){
+    #Test X
+    A <- A - dx
+    return(pvalsC(X, Y[,A,drop=FALSE], X4ColSum, X2, X3,
+                  if(calc_full_cor) full_xy_cor[ , A, drop=FALSE] else cor(X, Y[,A])))
+  } else {
+    #Test Y
+    return(pvalsC(Y, X[,A,drop=FALSE], Y4ColSum, Y2, Y3,
+                  if(calc_full_cor) t(full_xy_cor[A, , drop=FALSE]) else cor(Y, X[,A])))
+  }
+}
+pvals(1:100)
+
 testnodes <- 99
 
 res <- benchmark(Basic = {sets0 <- lapply(rep(1:testnodes, 1),
@@ -74,9 +89,15 @@ Par4 = {
 },
 replications = 5)
 
-k <- 20
 
-res2 <- benchmark(Basic = {sets0 <- lapply(rep(1:testnodes, k),
+ks <- seq(10, 50, 10)
+reslist <- rep(list(NULL), length(ks))
+
+for (k in ks) {
+  
+  cat('k=', k, '\n')
+
+reslist[[which(ks == k)]] <- benchmark(Basic = {sets0 <- lapply(rep(1:testnodes, k),
                                  function (i) initialize(n, cor(X, Y[ , i])))},
 Par = {
   # k reps
@@ -89,5 +110,7 @@ Par = {
   stopCluster(cl)
 },
 replications = 5)
+
+}
 
 
