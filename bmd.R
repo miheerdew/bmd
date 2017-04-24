@@ -8,7 +8,7 @@ source("stdize.R")
 
 bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, verbose = TRUE, generalOutput = TRUE,
                  updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
-                 updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1,
+                 updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1, start_nodes = NULL,
                  calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE) {
 
   if (FALSE) {
@@ -30,6 +30,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
     add_rate = 1
     calc_full_cor=TRUE
     parallel = FALSE
+    start_nodes = NULL
   }
 
   start_second <- proc.time()[3]
@@ -323,14 +324,11 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
     }
       
     B0x <- initialize(indx)
-    if (length(B0x) <= 1) {
-      if (interact) {
-        Dud_count <- Dud_count + 1
-        writeLines(as.character(Dud_count), Dud_fn)
-      }
-      return(NULL)
+    if (length(B0x) > 1) {
+      B0y <- update5(B0x, indx)
+    } else {
+      B0y <- integer(0)
     }
-    B0y <- update5(B0x, comm_indx)
 
     # Initializing extraction loop
     B_oldx <- B0x; B_oldy <- B0y
@@ -362,15 +360,15 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
           break
       } else {
 
-        if (comm_indx > dx) {
-          Xpvals <- pvals(B_oldy)
-          Ypvals <- pvals(B_oldx)
+        if (indx > dx) {
+          Xpvals <- update5(B_oldy, justpvals = TRUE)
+          Ypvals <- update5(B_oldx, justpvals = TRUE)
           B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
           B_newx <- B_new[B_new <= dx]
           B_newy <- B_new[B_new > dx]
         } else {
-          Xpvals <- pvals(B_oldx)
-          Ypvals <- pvals(B_oldy)
+          Xpvals <- update5(B_oldx, justpvals = TRUE)
+          Ypvals <- update5(B_oldy, justpvals = TRUE)
           B_new <- bh_reject(c(Xpvals, Ypvals), alpha)
           B_newx <- B_new[B_new > dx]
           B_newy <- B_new[B_new <= dx]
@@ -501,6 +499,9 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
   
   extractord <- c(Xindx, Yindx)[order(c(cor_X_to_Ysums, cor_Y_to_Xsums),
                                       decreasing = TRUE)]
+  
+  if (!is.null(start_nodes))
+    extractord <- extractord[extractord %in% start_nodes]
 
   # Initializing control variables
   stop_fn <- file.path(td, "stop_extracting.txt")

@@ -9,7 +9,7 @@ library(bmdCpp)
 
 bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, verbose = TRUE, generalOutput = TRUE,
                   updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
-                  updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1,
+                  updateMethod = 5, initializeMethod = 3, inv.length = TRUE, add_rate = 1, start_nodes = NULL,
                   calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE, conserv = TRUE) {
 
   if (FALSE) {
@@ -32,6 +32,7 @@ bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE,
     calc_full_cor=TRUE
     parallel = FALSE
     conserv = TRUE
+    start_nodes = TRUE
   }
   
   start_second <- proc.time()[3]
@@ -224,14 +225,21 @@ bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE,
     }
     
     B0x <- initialize(indx)
-    if (length(B0x) <= 1) {
+    if (length(B0x) > 1) {
+      B0y <- update5(B0x, indx)
+    } else {
+      B0y <- integer(0)
+    }
+    
+    if (length(B0x) * length(B0y) <= 1) {
       if (interact) {
         Dud_count <- Dud_count + 1
         writeLines(as.character(Dud_count), Dud_fn)
       }
       return(NULL)
     }
-    B0y <- update5(B0x, indx)
+    
+    if (length(B0y) == 0)
     
     # Initializing extraction loop
     B_oldx <- B0x; B_oldy <- B0y
@@ -402,6 +410,9 @@ bmdC <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE,
   
   extractord <- c(Xindx, Yindx)[order(c(cor_X_to_Ysums, cor_Y_to_Xsums),
                                       decreasing = TRUE)]
+  
+  if (!is.null(start_nodes))
+    extractord <- extractord[extractord %in% start_nodes]
 
   # Initializing control variables
   td <- tempdir()
