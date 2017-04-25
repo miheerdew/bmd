@@ -1,59 +1,45 @@
-initialize1R <- function(u) {
+initializeR <- function(cors, alpha, conserv = TRUE) {
+  fischer_tranformed_cor <- atanh(cors) * sqrt(n - 3)
+  pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
+  successes <- bh_rejectR(pvals, alpha)
+  return(successes)
+}
+
+initialize1 <- function (u) {
   
   if (u <= dx) {
     
     # Test X
-    cors < if (calc_full_cor) { 
-      t(full_xy_cor[u,])
+    cors <- if (calc_full_cor) { 
+      t(full_xy_cor[u, ])
     } else {
-      cor(Y, X[,u])
+      cor(Y, X[ , u])
     }
-    fischer_tranformed_cor <- atanh(cors) * sqrt(n - 3)
-    pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
-    successes <- Yindx[bh_reject(pvals, alpha)]
+    
+    if (Cpp) {
+      return(initializeC(n, cors, alpha, conserv = TRUE) + dx)
+    } else {
+      return(initializeR(cors, alpha, conserv = TRUE) + dx)
+    }
+    
     
   } else {
     
     # Test Y
     cors <- if (calc_full_cor) {
-      full_xy_cor[ , u]
+      full_xy_cor[ , u - dx]
     } else {
-      cor(X, Y[ , u])
+      cor(X, Y[ , u - dx])
     }
-    fischer_tranformed_cor <- atanh(cors) * sqrt(n - 3)
-    pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
-    successes <- Xindx[bh_reject(pvals, alpha)]
+    
+    if (Cpp) {
+      return(initializeC(n, cors, alpha, conserv = TRUE))
+    } else {
+      return(initializeR(cors, alpha, conserv = TRUE))
+    }
 
   }
   
   return(successes)
-  
-}
-
-
-initialize1Cpp <- function(u) {
-  
-  if (u > dx) {
-    
-    # Test X
-    u <- u - dx
-    if (calc_full_cor) {
-      cors <-  full_xy_cor[ , u]
-    } else {
-      cors <- cor(X, Y[ , u])
-    }
-    return(initializeC(n, cors, alpha, conserv = TRUE))
-    
-  } else {
-    
-    # Test Y
-    cors <- if (calc_full_cor) {
-      cors <- t(full_xy_cor[u, ]) 
-    } else {
-      cors <-  cor(Y, X[ , u])
-    }
-    return(initializeC(n, cors, alpha, conserv = TRUE) + dx)
-    
-  }
   
 }

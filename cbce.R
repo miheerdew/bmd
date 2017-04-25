@@ -89,6 +89,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, Cpp = TRUE, ver
   Dud_fn <- file.path(td, "Dud_count.txt")
   comm_dn <- file.path(td, "comm_dn")
   file.create(stop_fn, OL_fn, Dud_fn)
+  unlink(comm_dn, recursive = TRUE, force = TRUE)
   dir.create(comm_dn, showWarnings = FALSE)
   writeLines("0", OL_fn); writeLines("0", Dud_fn); writeLines("FALSE", stop_fn)
   
@@ -97,6 +98,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, Cpp = TRUE, ver
     ticp <- proc.time()[3]
     no_cores <- detectCores() - 1
     cl <- makeCluster(no_cores)
+    clusterEvalQ(cl, library(bmdCpp))
     registerDoParallel(cl)
     extract_res <- foreach(i = extractord) %dopar% {
       extract(i, print_output = FALSE, interact = TRUE)

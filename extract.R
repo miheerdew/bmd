@@ -1,10 +1,5 @@
 extract <- function (indx, interact = FALSE, print_output = verbose) {
   
-  if (print_output) {
-    cat("\n#-----------------------------------------\n\n")
-    cat("trying indx", indx, "\n")
-  }
-  
   # If you want to interact with trackers, get the current tracking info
   if (interact) {
     
@@ -29,24 +24,18 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
   
   # Print some output
   if (print_output && interact) {
+    cat("\n#-----------------------------------------\n\n")
     cat("extraction", which(extractord == indx), "of", length(extractord), "\n\n")
+    cat("indx", indx, "has not been clustered\n")
     cat("OL_count = ", OL_count, "\n")
     cat("Dud_count = ", Dud_count, "\n")
     cat(paste0(sum(clustered <= dx), " X vertices in communities.\n"))
     cat(paste0(sum(clustered > dx), " Y vertices in communities.\n"))
   }
   
-  # Get general B01 (regardless of indx)
-  if (Cpp) {
-    B01 <- initialize1Cpp(indx)
-  } else {
-    B01 <- initialize1R(indx)
-  }
-  
+  # Get general B01 & B02 (regardless of indx)
+  B01 <- initialize1(indx)
   if (length(B01) > 1) {
-    
-    # Convert indices if necessary
-    if (indx <= dx) B01 <- Yindx[B01]
     
     # Half-update
     if (Cpp) {
@@ -61,13 +50,11 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
     B02 <- integer(0)
   }
   
-  # Convert indices if necessary
-  if (indx > dx) B02 <- Yindx[B02]
-  
   # Check for dud
   if (length(B01) * length(B02) <= 1) {
     if (interact) {
       Dud_count <- Dud_count + 1
+      if (!is.numeric(Dud_count)) stop(as.character(indx))
       writeLines(as.character(Dud_count), Dud_fn)
     }
     return(NULL)
@@ -75,6 +62,7 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
   
   # Assign B0x and B0y according to indx
   if (indx > dx) {
+    B02 <- Yindx[B02]
     B0x <- B01; B0y <- B02
   } else {
     B0x <- B02; B0y <- B01
@@ -268,4 +256,5 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
               "itCount" = itCount, "did_it_cycle" = did_it_cycle,
               "current_time" = current_time,
               "report" = "complete_extraction"))
+  
 }
