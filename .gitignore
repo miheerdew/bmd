@@ -9,9 +9,9 @@ sims-results
 .DS_Store
 .Rapp.history
 GTEx_results
-
 #Rcpp files
 bmdCpp.Rcheck
 bmdCpp/*/*.o
 bmdCpp/*/*.so
 bmdCpp/*/*.dll
+CvsR
