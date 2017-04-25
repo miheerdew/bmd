@@ -11,7 +11,7 @@ source("extract.R")
 
 #sourceCpp("correlation.cpp")
 
-bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, verbose = TRUE, generalOutput = TRUE,
+bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, Cpp = TRUE, verbose = TRUE, generalOutput = TRUE,
                  updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
                  updateMethod = 1, inv.length = TRUE, add_rate = 1, start_nodes = NULL,
                  calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE) {
@@ -23,6 +23,7 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
     verbose = TRUE
     generalOutput = TRUE
     OL_tol = Inf
+    Cpp = TRUE
     Dud_tol = Inf
     time_limit = Inf
     updateMethod = 1
@@ -47,10 +48,22 @@ bmd <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, cp_cor = TRUE, 
   if (generalOutput)
     cat("Setup\n")
   
-  n <- nrow(X)
-  dx <- ncol(X); dy <- ncol(Y)
-  X_scaled <- scale(X); Y_scaled <- scale(Y)
-  Xindx <- 1:dx; Yindx <- (dx + 1):(dx + dy)
+  X <- scale(X); Y <- scale(Y)
+  X3 <- X^3; X2 <- X^2; X4ColSum <- colSums(X^4)
+  Y3 <- Y^3; Y2 <- Y^2; Y4ColSum <- colSums(Y^4)
+  
+  dx <- ncol(X)
+  dy <- ncol(Y)
+  n  <- nrow(X)
+  
+  Xindx <- 1:dx
+  Yindx <- (dx + 1):(dx + dy)
+  
+  if(calc_full_cor){
+    if (generalOutput)
+      cat("Calculating full cross correlation matrix\n")
+    full_xy_cor <- cor(X, Y)
+  }
   
   #-------------------------------------------------------------------------------
   # Extractions

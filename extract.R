@@ -36,13 +36,33 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
     cat(paste0(sum(clustered > dx), " Y vertices in communities.\n"))
   }
   
-  # Get general B01, B02 (regardless of indx)
-  B01 <- initialize(indx)
+  # Get general B01 (regardless of indx)
+  if (Cpp) {
+    B01 <- initialize1Cpp(indx)
+  } else {
+    B01 <- initialize1R(indx)
+  }
+  
   if (length(B01) > 1) {
-    B02 <- update5(B01, indx)
+    
+    # Convert indices if necessary
+    if (indx <= dx) B01 <- Yindx[B01]
+    
+    # Half-update
+    if (Cpp) {
+      pvals2 <- pvalsCpp(B01)
+      B02 <- bh_rejectC(pvals2, alpha, conserv = TRUE)
+    } else {
+      pvals2 <- pvalsR(B01)
+      B02 <- bh_rejectR(pvals2, alpha, conserv = TRUE)
+    }
+    
   } else {
     B02 <- integer(0)
   }
+  
+  # Convert indices if necessary
+  if (indx > dx) B02 <- Yindx[B02]
   
   # Check for dud
   if (length(B01) * length(B02) <= 1) {
@@ -54,8 +74,11 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
   }
   
   # Assign B0x and B0y according to indx
-  B0x <- ifelse(indx > dx, B02, B01)
-  B0y <- ifelse(indx > dx, B01, B02)
+  if (indx > dx) {
+    B0x <- B01; B0y <- B02
+  } else {
+    B0x <- B02; B0y <- B01
+  }
   
   # Initializing extraction loop
   B_oldx <- B0x; B_oldy <- B0y
@@ -76,10 +99,16 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
     
     if (updateMethod == 1) {
       
-      pvals <- ifelse(Cpp, c(pvalsCpp(B_oldy), pvalsCpp(B_oldx)),
-                      c(pvalsR(B_oldy), pvalsR(B_oldx)))
-      B_new <- ifelse(Cpp, bh_rejectC(pvals, alpha, conserv = TRUE),
-                      bh_rejectR(pvals, alpha))
+      pvalsXY <- if (Cpp) {
+        c(pvalsCpp(B_oldy), pvalsCpp(B_oldx))
+      } else {
+        c(pvalsR(B_oldy), pvalsR(B_oldx))
+      }
+      B_new <- if (Cpp) {
+        bh_rejectC(pvalsXY, alpha, conserv = TRUE)
+      } else {
+        bh_rejectR(pvalsXY, alpha)
+      }
       B_newx <- B_new[B_new <= dx]; B_newy <- B_new[B_new > dx]
       
     }
@@ -89,30 +118,42 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
       if (indx > dx) {
         
         # Update X nodes first
-        pvalsx <- ifelse(Cpp, pvalsCpp(B_oldy), pvalsR(B_oldy))
-        B_newx <- ifelse(Cpp, bh_rejectC(pvalsx, alpha, conserv = TRUE),
-                         bh_rejectR(pvalsx, alpha, conserv = TRUE))
+        pvalsx <- if (Cpp) pvalsCpp(B_oldy) else pvalsR(B_oldy)
+        B_newx <- if(Cpp) {
+          bh_rejectC(pvalsx, alpha, conserv = TRUE)
+        } else {
+          bh_rejectR(pvalsx, alpha, conserv = TRUE)
+        }
         if (length(B_newx) <= 1) {
           B_newy <- integer(0)
           break
         }
-        pvalsy <- ifelse(Cpp, pvalsCpp(B_newx), pvalsR(B_newx))
-        B_newy <- ifelse(Cpp, bh_rejectC(pvalsy, alpha, conserv = TRUE),
-                         bh_rejectR(pvalsy, alpha, conserv = TRUE))
+        pvalsy <- if (Cpp) pvalsCpp(B_newx) else pvalsR(B_newx)
+        B_newy <- if (Cpp) {
+          Yindx[bh_rejectC(pvalsy, alpha, conserv = TRUE)]
+        } else {
+          Yindx[bh_rejectR(pvalsy, alpha, conserv = TRUE)]
+        }
         
       } else {
         
         # Update Y nodes first
-        pvalsy <- ifelse(Cpp, pvalsCpp(B_oldx), pvalsR(B_oldx))
-        B_newy <- ifelse(Cpp, bh_rejectC(pvalsy, alpha, conserv = TRUE),
-                         bh_rejectR(pvalsy, alpha, conserv = TRUE))
+        pvalsy <- if (Cpp) pvalsCpp(B_oldx) else pvalsR(B_oldx)
+        B_newy <- if (Cpp) {
+          Yindx[bh_rejectC(pvalsy, alpha, conserv = TRUE)]
+        } else {
+          Yindx[bh_rejectR(pvalsy, alpha, conserv = TRUE)]
+        }
         if (length(B_newy) <= 1) {
           B_newx <- integer(0)
           break
         }
-        pvalsx <- ifelse(Cpp, pvalsCpp(B_newy), pvalsR(B_newy))
-        B_newx <- ifelse(Cpp, bh_rejectC(pvalsx, alpha, conserv = TRUE),
-                         bh_rejectR(pvalsx, alpha, conserv = TRUE))
+        pvalsx <- if (Cpp) pvalsCpp(B_newy) else pvalsR(B_newy)
+        B_newx <- if (Cpp) {
+          bh_rejectC(pvalsx, alpha, conserv = TRUE)
+        } else {
+          bh_rejectR(pvalsx, alpha, conserv = TRUE)
+        }
         
       }
         
