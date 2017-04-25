@@ -34,7 +34,7 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
   }
   
   # Get general B01 & B02 (regardless of indx)
-  B01 <- initialize1(indx)
+  B01 <- initialize1(indx, Cpp = Cpp)
   if (length(B01) > 1) {
     
     # Half-update
@@ -217,23 +217,25 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
     
   }
   
-  # Storing B_new and collecting update info
-  if (length(B_newx) * length(B_newy) == 0) {
-    B_new <- integer(0)
-    if (interact) {
-      Dud_count <- Dud_count + 1
-      writeLines(as.character(Dud_count), Dud_fn)
-    }
-  } else {
-    commfn <- file.path(comm_dn, paste0("node", indx, ".txt"))
-    file.create(commfn)
-    writeLines(as.character(B_new), commfn)
-  }
   update_info <- list("mean_jaccards" = mean_jaccards, 
                       "consec_jaccards" = consec_jaccards,
                       "consec_sizes" = consec_sizes,
                       "found_cycle" = found_cycle,
                       "found_break" = found_break)
+  
+  # Storing B_new and collecting update info
+  if (length(B_newx) * length(B_newy) * length(B_new) == 0) {
+    if (interact) {
+      Dud_count <- Dud_count + 1
+      writeLines(as.character(Dud_count), Dud_fn)
+    }
+    return(NULL)
+  } else {
+    commfn <- file.path(comm_dn, paste0("node", indx, ".txt"))
+    file.create(commfn)
+    writeLines(as.character(B_new), commfn)
+  }
+
   
   # Checking overlap with previous sets
   if (interact && length(comms) > 0) {

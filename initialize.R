@@ -5,7 +5,7 @@ initializeR <- function(cors, alpha, conserv = TRUE) {
   return(successes)
 }
 
-initialize1 <- function (u) {
+initialize1 <- function (u, Cpp = TRUE) {
   
   if (u <= dx) {
     

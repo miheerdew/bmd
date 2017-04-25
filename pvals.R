@@ -1,6 +1,6 @@
 pvalsCpp <- function (B) {
   
-  if(min(B) > dx){
+  if (min(B) > dx) {
     
     #Test X
     B <- B - dx
@@ -37,7 +37,7 @@ pvalsR <- function (B) {
     
     # Getting fixed matrix
     fixdIndx <- match(B, Yindx)
-    fixdMat <- Y_scaled[ , fixdIndx, drop = FALSE]
+    fixdMat <- Y[ , fixdIndx, drop = FALSE]
     
     # Calculating the variances
     {
@@ -47,27 +47,27 @@ pvalsR <- function (B) {
       } else {
         cor(X, Y[ , fixedIndx, drop = FALSE])
       }
-      y4 <- colSums(X_scaled^4)
+      #y4 <- colSums(X^4)
       xRowSum <- rowSums(fixdMat)
       xRowSum2 <- tcrossprod(xyCors, fixdMat^2)
       
       # Calc for star 1
-      star1 <- crossprod(X_scaled^2, xRowSum^2)
+      star1 <- crossprod(X2, xRowSum^2)
       
       # Calc for star 2
-      star2 <- y4 * rowSums(xyCors)^2
+      star2 <- X4ColSum * rowSums(xyCors)^2
       
       # Calc for star 3
-      star3 <- 2 * rowSums(xyCors) * colSums(X_scaled^2 * t(xRowSum2))
+      star3 <- 2 * rowSums(xyCors) * colSums(X2 * t(xRowSum2))
       
       # Calc for star 4
       star4 <- rowSums(xRowSum2^2)
       
       # Calc for dagger 1
-      dagger1 <- rowSums(xyCors) * crossprod(X_scaled^3, xRowSum)
+      dagger1 <- rowSums(xyCors) * crossprod(X3, xRowSum)
       
       # Calc for dagger 2
-      dagger2 <- colSums(xRowSum * t(xRowSum2) * X_scaled)
+      dagger2 <- colSums(xRowSum * t(xRowSum2) * X)
     }
     
     
@@ -75,7 +75,7 @@ pvalsR <- function (B) {
     
     # Getting indices
     fixdIndx <- match(B, Xindx)
-    fixdMat <- X_scaled[ , fixdIndx, drop = FALSE]
+    fixdMat <- X[ , fixdIndx, drop = FALSE]
     
     # Calculating the variances
     {
@@ -86,27 +86,27 @@ pvalsR <- function (B) {
         cor(X[,fixdIndx, drop = FALSE], Y)
       }
       xyCors <- t(xyCors)
-      y4 <- colSums(Y_scaled^4)
+      #y4 <- colSums(Y^4)
       xRowSum <- rowSums(fixdMat)
       xRowSum2 <- tcrossprod(xyCors, fixdMat^2)
       
       # Calc for star 1
-      star1 <- crossprod(Y_scaled^2, xRowSum^2)
+      star1 <- crossprod(Y2, xRowSum^2)
       
       # Calc for star 2
-      star2 <- y4 * rowSums(xyCors)^2
+      star2 <- Y4ColSum * rowSums(xyCors)^2
       
       # Calc for star 3
-      star3 <- 2 * rowSums(xyCors) * colSums(Y_scaled^2 * t(xRowSum2))
+      star3 <- 2 * rowSums(xyCors) * colSums(Y2 * t(xRowSum2))
       
       # Calc for star 4
       star4 <- rowSums(xRowSum2^2)
       
       # Calc for dagger 1
-      dagger1 <- rowSums(xyCors) * crossprod(Y_scaled^3, xRowSum)
+      dagger1 <- rowSums(xyCors) * crossprod(Y3, xRowSum)
       
       # Calc for dagger 2
-      dagger2 <- colSums(xRowSum * t(xRowSum2) * Y_scaled)
+      dagger2 <- colSums(xRowSum * t(xRowSum2) * Y)
     }
     
   }
