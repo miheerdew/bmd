@@ -45,7 +45,7 @@ pvalsR <- function (B) {
       xyCors <- if (calc_full_cor) {
         full_xy_cor[ , fixdIndx, drop = FALSE]
       } else {
-        cor(X, Y[ , fixedIndx, drop = FALSE])
+        cor(X, Y[ , fixdIndx, drop = FALSE])
       }
       #y4 <- colSums(X^4)
       xRowSum <- rowSums(fixdMat)

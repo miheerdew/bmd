@@ -57,7 +57,8 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
       if (!is.numeric(Dud_count)) stop(as.character(indx))
       writeLines(as.character(Dud_count), Dud_fn)
     }
-    return(NULL)
+    return(list("indx" = indx,
+                "report" = "dud"))
   }
   
   # Assign B0x and B0y according to indx
@@ -223,13 +224,21 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
                       "found_cycle" = found_cycle,
                       "found_break" = found_break)
   
+  save(update_info, chain, file = "Cupdates.RData")
+  
   # Storing B_new and collecting update info
   if (length(B_newx) * length(B_newy) * length(B_new) == 0) {
     if (interact) {
       Dud_count <- Dud_count + 1
       writeLines(as.character(Dud_count), Dud_fn)
     }
-    return(NULL)
+    return("indx" = indx,
+           "StableComm" = integer(0),
+           "update_info" = update_info,
+           "initial_set" = initial_set,
+           "itCount" = itCount, "did_it_cycle" = did_it_cycle,
+           "current_time" = current_time,
+           "report" = "break_or_collapse")
   } else {
     commfn <- file.path(comm_dn, paste0("node", indx, ".txt"))
     file.create(commfn)
@@ -252,7 +261,8 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
     writeLines("TRUE", stop_fn)
   }
   
-  return(list("StableComm" = B_new,
+  return(list("indx" = indx,
+              "StableComm" = B_new,
               "update_info" = update_info,
               "initial_set" = initial_set,
               "itCount" = itCount, "did_it_cycle" = did_it_cycle,
