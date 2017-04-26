@@ -218,27 +218,28 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
     
   }
   
+  # Getting time of completion
+  current_time <- proc.time()[3] - start_second
+  
+  # Storing B_new and collecting update info
   update_info <- list("mean_jaccards" = mean_jaccards, 
                       "consec_jaccards" = consec_jaccards,
                       "consec_sizes" = consec_sizes,
                       "found_cycle" = found_cycle,
                       "found_break" = found_break)
-  
-  save(update_info, chain, file = "Cupdates.RData")
-  
-  # Storing B_new and collecting update info
   if (length(B_newx) * length(B_newy) * length(B_new) == 0) {
     if (interact) {
       Dud_count <- Dud_count + 1
       writeLines(as.character(Dud_count), Dud_fn)
     }
-    return("indx" = indx,
-           "StableComm" = integer(0),
-           "update_info" = update_info,
-           "initial_set" = initial_set,
-           "itCount" = itCount, "did_it_cycle" = did_it_cycle,
-           "current_time" = current_time,
-           "report" = "break_or_collapse")
+    return(list("indx" = indx,
+                "StableComm" = integer(0),
+                "update_info" = update_info,
+                "initial_set" = initial_set,
+                "itCount" = itCount, 
+                "did_it_cycle" = did_it_cycle,
+                "current_time" = current_time,
+                "report" = "break_or_collapse"))
   } else {
     commfn <- file.path(comm_dn, paste0("node", indx, ".txt"))
     file.create(commfn)
@@ -256,7 +257,6 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
   }
   
   # Noting which final.sets are filled; doing checks
-  current_time <- proc.time()[3] - start_second
   if (interact && (current_time > time_limit || Dud_count > Dud_tol || OL_count > OL_tol)) {
     writeLines("TRUE", stop_fn)
   }
