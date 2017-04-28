@@ -9,7 +9,7 @@ library(bmdCpp)
 cbce <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, Cpp = TRUE, verbose = TRUE, generalOutput = TRUE,
                   updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
                   updateMethod = 1, inv.length = TRUE, add_rate = 1, start_nodes = NULL,
-                  calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE) {
+                  calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE, twoSided = FALSE) {
   
   if (FALSE) {
     alpha = 0.05
@@ -31,6 +31,7 @@ cbce <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, Cpp = TRUE, ve
     calc_full_cor = TRUE
     parallel = FALSE
     start_nodes = NULL
+    twoSided = FALSE
   }
   
   #-----------------------------------------------------------------------------
@@ -78,8 +79,12 @@ cbce <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, Cpp = TRUE, ve
   cor_X_to_Ysums <- as.vector(t(Ysum) %*% X)
   cor_Y_to_Xsums <- as.vector(t(Xsum) %*% Y)
   
-  extractord <- c(Xindx, Yindx)[order(c(cor_X_to_Ysums, cor_Y_to_Xsums),
-                                      decreasing = TRUE)]
+  if (!twoSided) {
+    extractord <- c(Xindx, Yindx)[order(c(cor_X_to_Ysums, cor_Y_to_Xsums),
+                                        decreasing = TRUE)]
+  } else {
+    extractord <- sample(c(Xindx, Yindx))
+  }
   
   if (!is.null(start_nodes))
     extractord <- extractord[extractord %in% start_nodes]
