@@ -1,6 +1,10 @@
 initializeR <- function(cors, alpha, conserv = TRUE) {
   fischer_tranformed_cor <- atanh(cors) * sqrt(n - 3)
-  pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
+  if (twoSided) {
+    pvals <- 2 * pnorm(abs(fischer_tranformed_cor), lower.tail = FALSE)
+  } else {
+    pvals <- pnorm(fischer_tranformed_cor, lower.tail = FALSE)
+  }
   successes <- bh_rejectR(pvals, alpha)
   return(successes)
 }

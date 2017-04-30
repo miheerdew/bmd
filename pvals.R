@@ -115,7 +115,11 @@ pvalsR <- function (B) {
     (n - 1)
   corsums <- as.vector(rowSums(xyCors))
   zstats <- sqrt(n) * corsums / sqrt(allvars)
-  pvals <- pnorm(zstats, lower.tail = FALSE)
+  if (twoSided) {
+    pvals <- 2 * pnorm(abs(zstats), lower.tail = FALSE)
+  } else {
+    pvals <- pnorm(zstats, lower.tail = FALSE)
+  }
   return(pvals)
   
 }
