@@ -231,7 +231,8 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
   
   # Checking overlap with previous sets
   if (interact && length(comms) > 1) {
-    OL_check <- unlist(lapply(comms, function (C) jaccard(B_new, C)))
+    OL_check <- unlist(lapply(comms[-length(comms)], 
+                              function (C) jaccard(B_new, C)))
     if (sum(OL_check < 1 - OL_thres) > 0) {
       OL_count <<- OL_count + 1
     }
