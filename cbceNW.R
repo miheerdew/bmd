@@ -7,7 +7,7 @@ library(bmdCpp)
 #sourceCpp("correlation.cpp")
 
 cbceNW <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, Cpp = TRUE, verbose = TRUE, generalOutput = TRUE,
-                    updateOutput = TRUE, throwInitial = TRUE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
+                    updateOutput = TRUE, exhaustive = FALSE, OL_tol = Inf, Dud_tol = Inf, time_limit = 18000,
                     updateMethod = 1, inv.length = TRUE, add_rate = 1, start_nodes = NULL,
                     calc_full_cor=FALSE, loop_limit = Inf, parallel = FALSE, twoSided = FALSE) {
   
@@ -23,7 +23,7 @@ cbceNW <- function (X, Y, alpha = 0.05, OL_thres = 0.9, tag = NULL, Cpp = TRUE, 
     time_limit = Inf
     updateMethod = 1
     updateOutput = TRUE
-    throwInitial = TRUE
+    exhaustive = FALSE
     inv.length = TRUE
     time_limit = Inf
     loop_limit = Inf
