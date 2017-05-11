@@ -1,12 +1,12 @@
-extract <- function (indx, initialBC = NULL, 
-                     interact = FALSE, print_output = verbose) {
+extract <- function (indx, interact = FALSE, print_output = verbose) {
   
   # If you want to interact with trackers, get the current tracking info
   if (interact) {
     
     # Checking for stops
     if (stop_extracting) return(list(report = "stop_extracting"))
-    if (indx %in% clustered) return(list(report = "indx_clustered"))
+    if (indx %in% clustered && !exhaustive) 
+      return(list(report = "indx_clustered"))
     
   }
   
@@ -21,48 +21,38 @@ extract <- function (indx, initialBC = NULL,
     cat(paste0(sum(clustered > dx), " Y vertices in communities.\n"))
   }
   
-  if (is.null(initialBC)) {
-    # Get general B01 & B02 (regardless of indx)
-    B01 <- initialize1(indx, Cpp = Cpp)
-    if (length(B01) > 1) {
-      
-      # Half-update
-      if (Cpp) {
-        pvals2 <- pvalsCpp(B01)
-        B02 <- bh_rejectC(pvals2, alpha, conserv = TRUE)
-      } else {
-        pvals2 <- pvalsR(B01)
-        B02 <- bh_rejectR(pvals2, alpha, conserv = TRUE)
-      }
-      
-    } else {
-      B02 <- integer(0)
-    }
+  # Get general B01 & B02 (regardless of indx)
+  B01 <- initialize1(indx, Cpp = Cpp)
+  if (length(B01) > 1) {
     
-    # Check for dud
-    if (length(B01) * length(B02) <= 1) {
-      if (interact) {
-        Dud_count <<- Dud_count + 1
-      }
-      return(list("indx" = indx, "report" = "dud"))
-    }
-    
-    # Assign B0x and B0y according to indx
-    if (indx > dx) {
-      B02 <- Yindx[B02]
-      B0x <- B01; B0y <- B02
+    # Half-update
+    if (Cpp) {
+      pvals2 <- pvalsCpp(B01)
+      B02 <- bh_rejectC(pvals2, alpha, conserv = TRUE)
     } else {
-      B0x <- B02; B0y <- B01
+      pvals2 <- pvalsR(B01)
+      B02 <- bh_rejectR(pvals2, alpha, conserv = TRUE)
     }
     
   } else {
-    
-    B0x <- initialBC[initialBC <= dx]
-    B0y <- initialBC[initialBC > dx]
-    
+    B02 <- integer(0)
   }
   
+  # Check for dud
+  if (length(B01) * length(B02) <= 1) {
+    if (interact) {
+      Dud_count <<- Dud_count + 1
+    }
+    return(list("indx" = indx, "report" = "dud"))
+  }
   
+  # Assign B0x and B0y according to indx
+  if (indx > dx) {
+    B02 <- Yindx[B02]
+    B0x <- B01; B0y <- B02
+  } else {
+    B0x <- B02; B0y <- B01
+  }
   
   # Initializing extraction loop
   B_oldx <- B0x; B_oldy <- B0y
@@ -235,10 +225,8 @@ extract <- function (indx, initialBC = NULL,
                 "current_time" = current_time,
                 "report" = "break_or_collapse"))
   } else {
-    if (interact) {
-      clustered <<- union(clustered, B_new)
-      comms <<- c(comms, list(B_new))
-    }
+    clustered <<- union(clustered, B_new)
+    comms <<- c(comms, list(B_new))
   }
 
   

@@ -7,15 +7,19 @@ extract <- function (indx, interact = FALSE, print_output = verbose) {
     stop_extracting <- as.logical(readLines(stop_fn))
     if (stop_extracting) return(list(report = "stop_extracting"))
     
-    # Seeing if indx already in a comm
-    comm_files <- list.files(comm_dn, full.names = TRUE)
-    if (length(comm_files) > 0) {
-      comms <- lapply(comm_files, readLines)
-    } else {
-      comms <- numeric(0)
+    if (!exhaustive) {
+    
+      # Seeing if indx already in a comm
+      comm_files <- list.files(comm_dn, full.names = TRUE)
+      if (length(comm_files) > 0) {
+        comms <- lapply(comm_files, readLines)
+      } else {
+        comms <- numeric(0)
+      }
+      clustered <- as.numeric(unique(unlist(comms)))
+      if (indx %in% clustered) return(list(report = "indx_clustered"))
+      
     }
-    clustered <- as.numeric(unique(unlist(comms)))
-    if (indx %in% clustered) return(list(report = "indx_clustered"))
     
     OL_count <- as.numeric(readLines(OL_fn))
     Dud_count <- as.numeric(readLines(Dud_fn))
